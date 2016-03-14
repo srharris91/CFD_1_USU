@@ -12,7 +12,7 @@ MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
     TYPE::dat
-        REAL::x,y,u,v,phi,phi_new
+        REAL::x,y,phi,phi_new
         INTEGER::n
     END TYPE dat
 CONTAINS
@@ -113,40 +113,53 @@ PROGRAM project3
     apt= aet + awt + ant + ast
     open(unit=5,file="output/convergence.txt")
     CALL CPU_TIME(TIME1)
-    DO iter=0,100000000
-        error = 0.
-        DO j=1,max_x
-            DO i=1,max_y
-                    phi(i,j)%phi_new = (aw*phi(i,j-1)%phi_new + as*phi(i-1,j)%phi_new)/ap  &
-                        -beta/ap * (&
-                         apt*phi(i  ,j  )%phi_new &
-                        -aet*phi(i  ,j+1)%phi_new &
-                        -awt*phi(i  ,j-1)%phi_new &
-                        -ant*phi(i+1,j  )%phi_new &
-                        -ast*phi(i-1,j  )%phi_new &
-                        -ap *phi(i  ,j  )%phi_new &
-                        +aw *phi(i  ,j-1)%phi_new &
-                        +as *phi(i-1,j  )%phi_new )
-                IF (ISNAN(phi(i,j)%phi_new)) THEN
-                    WRITE(*,*) "You really stink at this dude!  error on ",i,j," value of phi_new.  On iter = ",iter
-                    WRITE(*,*) phi(i,j)%phi_new
-                    STOP
-                END IF
-                error = error + (phi(i,j)%phi-phi(i,j)%phi_new)**2  ! RSS the error for each iteration
-            END DO
-        END DO
-        ! BC ghost node values
-        phi(max_yp,:)%phi_new = phi(max_y,:)%phi_new
-        phi(:,max_xp)%phi_new = phi(:,max_x)%phi_new
-        error = SQRT(error)                             ! sqrt to have RSS of error
-        write(5,*) iter,error
-        phi%phi = phi%phi_new                           ! set old phi to the new iteration guess
-        IF (error .lt. 1.E-11) THEN
-            WRITE(*,*) 'Did in ',iter,' iterations'
-            WRITE(*,*) 'With RSS error = ',error
-            EXIT                                        ! exit loop if error is small enough
-        END IF
-    END DO
+    ! step 1 solve discretised momentum equations
+
+    ! step 2 Solve pressure correction equation
+
+    ! step 3 Correct pressure and velocities
+
+    ! step 4 Solve all other discretised transport equations
+
+    ! if no convergence, then iterate
+
+    ! if converged then stop
+
+
+!    DO iter=0,100000000
+!        error = 0.
+!        DO j=1,max_x
+!            DO i=1,max_y
+!                    phi(i,j)%phi_new = (aw*phi(i,j-1)%phi_new + as*phi(i-1,j)%phi_new)/ap  &
+!                        -beta/ap * (&
+!                         apt*phi(i  ,j  )%phi_new &
+!                        -aet*phi(i  ,j+1)%phi_new &
+!                        -awt*phi(i  ,j-1)%phi_new &
+!                        -ant*phi(i+1,j  )%phi_new &
+!                        -ast*phi(i-1,j  )%phi_new &
+!                        -ap *phi(i  ,j  )%phi_new &
+!                        +aw *phi(i  ,j-1)%phi_new &
+!                        +as *phi(i-1,j  )%phi_new )
+!                IF (ISNAN(phi(i,j)%phi_new)) THEN
+!                    WRITE(*,*) "You really stink at this dude!  error on ",i,j," value of phi_new.  On iter = ",iter
+!                    WRITE(*,*) phi(i,j)%phi_new
+!                    STOP
+!                END IF
+!                error = error + (phi(i,j)%phi-phi(i,j)%phi_new)**2  ! RSS the error for each iteration
+!            END DO
+!        END DO
+!        ! BC ghost node values
+!        phi(max_yp,:)%phi_new = phi(max_y,:)%phi_new
+!        phi(:,max_xp)%phi_new = phi(:,max_x)%phi_new
+!        error = SQRT(error)                             ! sqrt to have RSS of error
+!        write(5,*) iter,error
+!        phi%phi = phi%phi_new                           ! set old phi to the new iteration guess
+!        IF (error .lt. 1.E-11) THEN
+!            WRITE(*,*) 'Did in ',iter,' iterations'
+!            WRITE(*,*) 'With RSS error = ',error
+!            EXIT                                        ! exit loop if error is small enough
+!        END IF
+!    END DO
     
     CALL CPU_TIME(TIME2)
     WRITE(*,*) "CPU Time = ",TIME2-TIME1
@@ -154,17 +167,11 @@ PROGRAM project3
     ! user will need to specify size of 
     open(unit=9,file="output/x.txt");open(unit=10,file="output/y.txt")
     open(unit=11,file="output/phi.txt");
-    open(unit=13,file="output/line.txt")
     100 FORMAT (max_x2p F14.6)
     WRITE( 9,100) ( phi(i,:)%x ,i=0,max_xp )
     WRITE(10,100) ( phi(i,:)%y ,i=0,max_xp )
     WRITE(11,100) ( phi(i,:)%phi ,i=0,max_xp )
     k=max_xp
-    DO i=0,max_yp
-        !WRITE(13,'(2F14.6)') REAL(k)*(sqrt(2.))/REAL(max_x), phi(i,k)%phi
-        WRITE(13,'(2F14.6)') phi(i,k)%x*sqrt(2.), phi(i,k)%phi
-        k=k-1
-    END DO
-    close(9);close(10);close(11);close(5);close(13)
+    close(9);close(10);close(11);close(5)
     WRITE(*,*) "Wall Time = ",etime(TIMEA)
 END PROGRAM project3
