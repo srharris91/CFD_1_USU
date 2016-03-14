@@ -45,3 +45,9 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# code stuff (Added by Shaun
+*.mod
+*.aux
+*.log
+*.o
