@@ -12,7 +12,7 @@ MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
     TYPE::dat
-        REAL::x,y,phi,phi_new
+        REAL::x,y,u,v,AP,AE,AN,AS,AW
         INTEGER::n
     END TYPE dat
 CONTAINS
@@ -52,6 +52,53 @@ CONTAINS
     strct(max_xp,:)%x = strct(0,:)%x
     strct(max_xp,:)%y = 1.
     END SUBROUTINE set_xy
+    SUBROUTINE umom(strct,dx,dy,nx,ny)
+        REAL,INTENT(IN)     ::  dx,dy
+        INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
+        TYPE(dat),DIMENSION(0:nx-1,0:nx-1),INTENT(INOUT)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
+        REAL    ::  mu = 0.01
+        REAL    ::  rho= 1.
+        REAL    ::  mdot ! temporary value for mass flow values
+        INTEGER ::  i,j !loop iterators
+        DO i=2,max_x
+            DO j=1,max_y
+                mdot            =   rho*strct(i+1,j  )%u*dy ! east face
+                strct(i,j)%AE   =   max(-mdot,0) + mu*dy/dx
+                IF (j==1) THEN !BC
+                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
+                    strct(i,j)%AN   =   max(-mdot,0) + mu*dx*2./dy
+                ELSE
+                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
+                    strct(i,j)%AN   =   max(-mdot,0) + mu*dx/dy
+                mdot            =   rho*strct(i-1,j  )%u*dy ! West face
+                strct(i,j)%AW   =   max( mdot,0) + mu*dy/dx
+                IF (j==max_x) THEN !BC
+                    mdot            =   rho*strct(i  ,j-1)%v*dx ! South face
+                    strct(i,j)%AS   =   max( mdot,0) + mu*dx*2./dy
+                ELSE
+                    mdot            =   rho*strct(i  ,j-1)%v*dy ! South face
+                    strct(i,j)%AS   =   max( mdot,0) + mu*dx/dy
+                strct(i,j)%AP   =   strct(i,j)%AE + &
+                                    strct(i,j)%AN + &
+                                    strct(i,j)%AW + &
+                                    strct(i,j)%AS
+            END DO
+        END DO
+
+        
+        DO i=2,max_x
+            DO j=1,max_y
+
+
+            END DO
+        END DO
+
+
+
+    END SUBROUTINE umom
+
+
+
 END MODULE types
 
 
@@ -61,59 +108,39 @@ PROGRAM project3
     IMPLICIT NONE
     ! declare variables
     INTEGER ::  i,j,iter,k!,max_x=20,max_y=20
-    REAL    ::  dx,dy,gamma,ae,aw,an,as,ap,error
-    REAL    ::  Lphi,Rphi,Tphi,Bphi ! boundary condition phi values
-    REAL    ::  Fe,Fw,Fn,Fs ! flux terms = rho * u where rho = 1
-    REAL    ::  aet,awt,ast,ant,apt ! higher order interpolation scheme coefficients
-    REAL    ::  beta        ! used for combining lower order and higher order interpolation schemes
-    REAL    ::  u=2.,v=2.   ! velocity values
-    TYPE(dat),DIMENSION(0:max_xp,0:max_yp)::phi ! 22 if you count edges (thin cell)
+    REAL    ::  dx,dy,error
+    REAL    ::  Lu,Ru,Tu,Bu ! boundary condition u velocity values
+    REAL    ::  u=0.,v=0.   ! velocity values
+    TYPE(dat),DIMENSION(0:max_xp,0:max_yp)::data ! 22 if you count edges (thin cell)
     REAL    :: TIME1,TIME2  ! for time of computation
     REAL(KIND=4),DIMENSION(2):: TIMEA  ! for time of computation
     ! set dx and dy and gamma and coefficients (without dividing by delta x between node centers)
     dx=1./REAL(max_x)
     dy=1./REAL(max_y)
-    gamma = 1.
-    ! initialize phi data and x,y for middle values
-    CALL set_xy(phi,dx,dy,max_x2p,max_x2p)
+    ! initialize data and x,y for middle values
+    CALL set_xy(data,dx,dy,max_xp,max_xp)
     !! initialize BC's
     ! BC's
-    Lphi = 100.
-    Rphi = 0.
-    Tphi = 100.
-    Bphi = 0.
+    Lu = 0.
+    Ru = 0.
+    Tu = 1.
+    Bu = 0.
     ! left Boundary
-    phi(:,0)%phi = Lphi
-    phi(:,0)%phi_new = Lphi
+    data(:,0)%u = Lu
     ! bottom boundary
-    phi(0,:)%phi = Bphi
-    phi(0,:)%phi_new = Bphi
+    data(0,:)%u = Bu
     ! right boundary
-    phi(:,max_yp)%phi = Rphi
-    phi(:,max_yp)%phi_new = Rphi
+    data(:,max_yp)%u = Ru
     ! top boundary
-    phi(max_xp,:)%phi = Tphi
-    phi(max_xp,:)%phi_new = Tphi
+    data(max_xp,:)%u = Tu
+
+    ! initialize v
+    data%v = 0.
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
-    Fe = 1.*u
-    Fw = 1.*u
-    Fn = 1.*v
-    Fs = 1.*v
-    beta = 1.
-    ae = 0.
-    an = 0.
-    aw = Fw
-    as = Fs
-    ap = as + aw
-    aet= -Fe/2.
-    awt= Fw/2.
-    ant= -Fn/2.
-    ast= Fs/2.
-    apt= aet + awt + ant + ast
-    open(unit=5,file="output/convergence.txt")
     CALL CPU_TIME(TIME1)
     ! step 1 solve discretised momentum equations
+    CALL umom(data,dx,dy,max_xp,max_xp)
 
     ! step 2 Solve pressure correction equation
 
@@ -165,13 +192,13 @@ PROGRAM project3
     WRITE(*,*) "CPU Time = ",TIME2-TIME1
     !output
     ! user will need to specify size of 
-    open(unit=9,file="output/x.txt");open(unit=10,file="output/y.txt")
-    open(unit=11,file="output/phi.txt");
-    100 FORMAT (max_x2p F14.6)
-    WRITE( 9,100) ( phi(i,:)%x ,i=0,max_xp )
-    WRITE(10,100) ( phi(i,:)%y ,i=0,max_xp )
-    WRITE(11,100) ( phi(i,:)%phi ,i=0,max_xp )
-    k=max_xp
-    close(9);close(10);close(11);close(5)
-    WRITE(*,*) "Wall Time = ",etime(TIMEA)
+    !open(unit=9,file="output/x.txt");open(unit=10,file="output/y.txt")
+    !open(unit=11,file="output/phi.txt");
+    !100 FORMAT (max_x2p F14.6)
+    !WRITE( 9,100) ( phi(i,:)%x ,i=0,max_xp )
+    !WRITE(10,100) ( phi(i,:)%y ,i=0,max_xp )
+    !WRITE(11,100) ( phi(i,:)%phi ,i=0,max_xp )
+    !k=max_xp
+    !close(9);close(10);close(11);close(5)
+    !WRITE(*,*) "Wall Time = ",etime(TIMEA)
 END PROGRAM project3
