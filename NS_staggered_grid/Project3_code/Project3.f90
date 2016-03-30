@@ -48,12 +48,23 @@ PROGRAM project3
 
     ! initialize v
     data%v_old = 0.
-    data%v     = 0.
+    data(4,2:max_x-2)%v_old = -1.24! initialize strange value to get v to converge
+    data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
+    data%v     = data%v_old
+    
     ! initialize P values
     data%Pe=1.
     data%Pn=1.
     data%Pw=1.
     data%Ps=1.
+    data%Pp=1.
+
+    ! initialize velocity correction terms
+    data%uw=0.
+    data%ue=0.
+    data%vn=0.
+    data%vs=0.
+
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
@@ -83,7 +94,7 @@ PROGRAM project3
 
 
     ! if converged then stop
-    IF (error_RSS < 0.000001) THEN
+    IF (error_RSS < 0.00001) THEN
         EXIT
     ELSE
         WRITE(*,*) "iteration and error = ",iter,error_RSS
@@ -99,9 +110,12 @@ WRITE(*,*) "CPU Time = ",TIME2-TIME1
 open(unit=9,file="output/x.txt")
 open(unit=10,file="output/y.txt")
 open(unit=11,file="output/u.txt")
-100 FORMAT (max_x2p F14.6)
+open(unit=12,file="output/v.txt")
+!100 FORMAT (max_x2p F14.6)
+100 FORMAT (max_x2p ES16.7)
 WRITE( 9,100) ( data(:,i)%x ,i=0,max_yp )
 WRITE(10,100) ( data(:,i)%y ,i=0,max_yp )
 WRITE(11,100) ( data(:,i)%u ,i=0,max_yp )
-close(9);close(10);close(11)
+WRITE(12,100) ( data(:,i)%v ,i=0,max_yp )
+close(9);close(10);close(11);close(12)
 END PROGRAM project3

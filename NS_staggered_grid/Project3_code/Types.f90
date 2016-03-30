@@ -5,8 +5,9 @@ MODULE types
         REAL::x,y
         REAL::u,v,u_old,v_old
         REAL::AP,AE,AN,AS,AW
-        REAL::Pe,Pn,Ps,Pw
+        REAL::Pe,Pn,Ps,Pw,Pp
         INTEGER::n
+        REAL::uw,ue,vn,vs   ! velocity correction terms
     END TYPE dat
 CONTAINS
     SUBROUTINE set_xy (strct,dx,dy,nx,ny)
@@ -56,7 +57,7 @@ CONTAINS
         REAL    ::  mdot ! temporary value for mass flow values
         INTEGER ::  i,j !loop iterators
         REAL    ::  Omega = 0.5
-        DO i=2,nx
+        DO i=1,nx
             DO j=1,ny
                 mdot            =   rho*strct(i+1,j  )%u*dy ! east face
                 strct(i,j)%AE   =   max(-mdot,0.) + mu*dy/dx
@@ -118,5 +119,23 @@ CONTAINS
     END SUBROUTINE mom_uv
 
 
+    SUBROUTINE vel_correction(strct,dx,dy,nx,ny)
+        ! requires uniform grid of dx and dy spacing
+        REAL,INTENT(IN)     ::  dx,dy
+        INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
+        TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
+        REAL    ::  mu = 0.01
+        REAL    ::  rho= 1.
+        REAL    ::  mdot ! temporary value for mass flow values
+        INTEGER ::  i,j !loop iterators
+        REAL    ::  Omega = 0.5
+        DO i=1,nx
+            DO j=1,ny
+                strct(i,j)%uw=(strct(i,j)%Pw - strct(i,j)%Pp)*dy/strct(i,j)%AW
+                strct(i,j)%ue=(strct(i,j)%Pp - strct(i,j)%Pe)*dy/strct(i,j)%AE
+                strct(i,j)%vn=(strct(i,j)%Pp - strct(i,j)%Pn)*dx/strct(i,j)%AN
+                strct(i,j)%vs=(strct(i,j)%Ps - strct(i,j)%Pp)*dx/strct(i,j)%AS
+            END DO
+        END DO
 
 END MODULE types
