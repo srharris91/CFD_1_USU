@@ -5,7 +5,8 @@ MODULE types
         REAL::x,y
         REAL::u,v,u_old,v_old
         REAL::AP,AE,AN,AS,AW
-        REAL::Pe,Pn,Ps,Pw,Pp
+        !REAL::Pe,Pn,Ps,Pw,Pp,P_old
+        REAL::Pp,P_old
         INTEGER::n
         REAL::uw,ue,vn,vs   ! velocity correction terms
     END TYPE dat
@@ -59,19 +60,19 @@ CONTAINS
         REAL    ::  Omega = 0.5
         DO i=1,nx
             DO j=1,ny
-                mdot            =   rho*strct(i+1,j  )%u*dy ! east face
+                mdot            =   rho*strct(i  ,j  )%ue*dy ! east face
                 strct(i,j)%AE   =   max(-mdot,0.) + mu*dy/dx
                 IF (j==1) THEN !BC
-                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
+                    mdot            =   rho*strct(i  ,j  )%vn*dx ! north face
                     strct(i,j)%AN   =   max(-mdot,0.) + mu*dx*2./dy
                 ELSE
-                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
+                    mdot            =   rho*strct(i  ,j  )%vn*dx ! north face
                     strct(i,j)%AN   =   max(-mdot,0.) + mu*dx/dy
-                    mdot            =   rho*strct(i-1,j  )%u*dy ! West face
-                    strct(i,j)%AW   =   max( mdot,0.) + mu*dy/dx
                 END IF
+                mdot            =   rho*strct(i  ,j  )%uw*dy ! West face
+                strct(i,j)%AW   =   max( mdot,0.) + mu*dy/dx
                 IF (j==ny) THEN !BC
-                    mdot            =   rho*strct(i  ,j-1)%v*dx ! South face
+                    mdot            =   rho*strct(i  ,j  )%vs*dx ! South face
                     strct(i,j)%AS   =   max( mdot,0.) + mu*dx*2./dy
                 ELSE
                     mdot            =   rho*strct(i  ,j-1)%v*dy ! South face
@@ -95,7 +96,7 @@ CONTAINS
                                     strct(i,j)%AN*strct(i  ,j+1)%u +&
                                     strct(i,j)%AW*strct(i-1,j  )%u +&
                                     strct(i,j)%AS*strct(i  ,j-1)%u +&
-                                    (strct(i,j)%Pw-strct(i,j)%Pe)  *&
+                                    (strct(i-1,j)%P_old-strct(i+1,j)%P_old)  *&
                                     dx                              &
                                 )
             END DO
@@ -111,7 +112,7 @@ CONTAINS
                                     strct(i,j)%AN*strct(i  ,j+1)%v +&
                                     strct(i,j)%AW*strct(i-1,j  )%v +&
                                     strct(i,j)%AS*strct(i  ,j-1)%v +&
-                                    (strct(i,j)%Ps-strct(i,j)%Pn)  *&
+                                    (strct(i,j-1)%P_old-strct(i,j+1)%P_old)  *&
                                     dy                              &
                                 )
             END DO
@@ -131,11 +132,28 @@ CONTAINS
         REAL    ::  Omega = 0.5
         DO i=1,nx
             DO j=1,ny
-                strct(i,j)%uw=(strct(i,j)%Pw - strct(i,j)%Pp)*dy/strct(i,j)%AW
-                strct(i,j)%ue=(strct(i,j)%Pp - strct(i,j)%Pe)*dy/strct(i,j)%AE
-                strct(i,j)%vn=(strct(i,j)%Pp - strct(i,j)%Pn)*dx/strct(i,j)%AN
-                strct(i,j)%vs=(strct(i,j)%Ps - strct(i,j)%Pp)*dx/strct(i,j)%AS
+                strct(i,j)%uw=(strct(i-1,j  )%P_old - strct(i  ,j  )%P_old) *dy/strct(i,j)%AW
+                strct(i,j)%ue=(strct(i  ,j  )%P_old - strct(i+1,j  )%P_old) *dy/strct(i,j)%AE
+                strct(i,j)%vn=(strct(i  ,j  )%P_old - strct(i  ,j+1)%P_old) *dx/strct(i,j)%AN
+                strct(i,j)%vs=(strct(i  ,j-1)%P_old - strct(i  ,j  )%P_old) *dx/strct(i,j)%AS
             END DO
         END DO
+
+        DO i=1,nx
+            DO j=1,ny
+                strct(i,j)%Pp=strct(i,j)%P_old+(Omega/strct(i,j)%AP)&
+                       *(&
+                       + strct(i,j)%AE*strct(i+1,j  )%P_old&
+                       + strct(i,j)%AW*strct(i-1,j  )%P_old&
+                       + strct(i,j)%AN*strct(i  ,j+1)%P_old&
+                       + strct(i,j)%AS*strct(i  ,j-1)%P_old&
+                       !- S& ! no source terms
+                       - strct(i,j)%AP*strct(i,j)%P_old&
+                       )
+            END DO
+        END DO
+    END SUBROUTINE vel_correction
+
+
 
 END MODULE types

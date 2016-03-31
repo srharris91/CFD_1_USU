@@ -8,8 +8,12 @@ output = output/
 EXEC = Project3.exec
 OBJS = Types.o Project3.o
 
-all: exec run plot
+all: dir exec run plot
 
+dir:
+	@echo ''
+	@mkdir -p output
+	@echo ''
 compile:
 	$(compiler) $(module) $(code).f90 $(flags) -o $(output)$(code).exec
 # 	$(compiler) $(code).cpp $(flags) $(code).exec
