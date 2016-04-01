@@ -1,14 +1,18 @@
 MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
+    ! Properties of fluid flow
+    REAL    ::  Omega = 0.5 ! Relaxation factor
+    REAL    ::  mu = 0.01   ! dynamic viscosity
+    REAL    ::  rho= 1.     ! density
     TYPE::dat
         REAL::x,y
-        REAL::u,v,u_old,v_old
+        REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
         REAL::AP,AE,AN,AS,AW
         !REAL::Pe,Pn,Ps,Pw,Pp,P_old
-        REAL::Pp,P_old
+        REAL::P,Pp,P_old
         INTEGER::n
-        REAL::uw,ue,vn,vs   ! velocity correction terms
+        !REAL::uw,ue,vn,vs   ! velocity correction terms
     END TYPE dat
 CONTAINS
     SUBROUTINE set_xy (strct,dx,dy,nx,ny)
@@ -53,35 +57,47 @@ CONTAINS
         REAL,INTENT(IN)     ::  dx,dy
         INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
-        REAL    ::  mu = 0.01
-        REAL    ::  rho= 1.
+        !REAL    ::  mu = 0.01
+        !REAL    ::  rho= 1.
         REAL    ::  mdot ! temporary value for mass flow values
         INTEGER ::  i,j !loop iterators
-        REAL    ::  Omega = 0.5
+        !REAL    ::  Omega = 0.5
+       ! DO i=1,nx
+       !     DO j=1,ny
         DO i=1,nx
             DO j=1,ny
-                mdot            =   rho*strct(i  ,j  )%ue*dy ! east face
-                strct(i,j)%AE   =   max(-mdot,0.) + mu*dy/dx
+                IF (i==1) THEN !BC
+                    mdot                =   rho*strct(i  ,j  )%u*dy ! West face
+                    strct(i,j)%AW       =   max( mdot,0.) + mu*dy*2./dx
+                ELSE
+                    mdot                =   rho*strct(i  ,j  )%u*dy ! West face
+                    strct(i,j)%AW       =   max( mdot,0.) + mu*dy/dx
+                END IF
+                IF (i==nx) THEN !BC
+                    mdot                =   rho*strct(i+1,j  )%u*dy ! east face
+                    strct(i,j)%AE       =   max(-mdot,0.) + mu*dy*2./dx
+                ELSE 
+                    mdot                =   rho*strct(i+1,j  )%u*dy ! east face
+                    strct(i,j)%AE       =   max(-mdot,0.) + mu*dy/dx
+                END IF
                 IF (j==1) THEN !BC
-                    mdot            =   rho*strct(i  ,j  )%vn*dx ! north face
+                    mdot            =   rho*strct(i  ,j+1)%v*dx ! south face
                     strct(i,j)%AN   =   max(-mdot,0.) + mu*dx*2./dy
                 ELSE
-                    mdot            =   rho*strct(i  ,j  )%vn*dx ! north face
+                    mdot            =   rho*strct(i  ,j+1)%v*dx ! south face
                     strct(i,j)%AN   =   max(-mdot,0.) + mu*dx/dy
                 END IF
-                mdot            =   rho*strct(i  ,j  )%uw*dy ! West face
-                strct(i,j)%AW   =   max( mdot,0.) + mu*dy/dx
                 IF (j==ny) THEN !BC
-                    mdot            =   rho*strct(i  ,j  )%vs*dx ! South face
+                    mdot            =   rho*strct(i  ,j  )%v*dx ! north face
                     strct(i,j)%AS   =   max( mdot,0.) + mu*dx*2./dy
                 ELSE
-                    mdot            =   rho*strct(i  ,j-1)%v*dy ! South face
+                    mdot            =   rho*strct(i  ,j  )%v*dx ! north face
                     strct(i,j)%AS   =   max( mdot,0.) + mu*dx/dy
                 END IF
-                strct(i,j)%AP   =   strct(i,j)%AE + &
-                                    strct(i,j)%AN + &
-                                    strct(i,j)%AW + &
-                                    strct(i,j)%AS
+                strct(i,j)%AP       =   strct(i,j)%AE + &
+                                        strct(i,j)%AN + &
+                                        strct(i,j)%AW + &
+                                        strct(i,j)%AS
             END DO
         END DO
 
@@ -96,8 +112,8 @@ CONTAINS
                                     strct(i,j)%AN*strct(i  ,j+1)%u +&
                                     strct(i,j)%AW*strct(i-1,j  )%u +&
                                     strct(i,j)%AS*strct(i  ,j-1)%u +&
-                                    (strct(i-1,j)%P_old-strct(i+1,j)%P_old)  *&
-                                    dx                              &
+                                    (strct(i-1,j)%P_old-strct(i  ,j)%P_old)  *&
+                                    dy                              &
                                 )
             END DO
         END DO
@@ -112,8 +128,8 @@ CONTAINS
                                     strct(i,j)%AN*strct(i  ,j+1)%v +&
                                     strct(i,j)%AW*strct(i-1,j  )%v +&
                                     strct(i,j)%AS*strct(i  ,j-1)%v +&
-                                    (strct(i,j-1)%P_old-strct(i,j+1)%P_old)  *&
-                                    dy                              &
+                                    (strct(i,j-1)%P_old-strct(i,j  )%P_old)  *&
+                                    dx                              &
                                 )
             END DO
         END DO
@@ -125,33 +141,51 @@ CONTAINS
         REAL,INTENT(IN)     ::  dx,dy
         INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
-        REAL    ::  mu = 0.01
-        REAL    ::  rho= 1.
-        REAL    ::  mdot ! temporary value for mass flow values
+        !REAL    ::  mu = 0.01
+        !REAL    ::  rho= 1.
+        !REAL    ::  mdot ! temporary value for mass flow values
         INTEGER ::  i,j !loop iterators
-        REAL    ::  Omega = 0.5
+        !REAL    ::  Omega = 0.5
         DO i=1,nx
             DO j=1,ny
-                strct(i,j)%uw=(strct(i-1,j  )%P_old - strct(i  ,j  )%P_old) *dy/strct(i,j)%AW
-                strct(i,j)%ue=(strct(i  ,j  )%P_old - strct(i+1,j  )%P_old) *dy/strct(i,j)%AE
-                strct(i,j)%vn=(strct(i  ,j  )%P_old - strct(i  ,j+1)%P_old) *dx/strct(i,j)%AN
-                strct(i,j)%vs=(strct(i  ,j-1)%P_old - strct(i  ,j  )%P_old) *dx/strct(i,j)%AS
+                strct(i,j)%Pp = (Omega/strct(i,j)%AP)&
+                    *(&
+                    + strct(i,j)%AE*strct(i+1,j  )%P&
+                    + strct(i,j)%AW*strct(i-1,j  )%P&
+                    + strct(i,j)%AN*strct(i  ,j+1)%P&
+                    + strct(i,j)%AS*strct(i  ,j-1)%P&
+                    !- S& ! no source terms
+                - strct(i,j)%AP*strct(i,j)%P_old&
+                    )
+
+                strct(i,j)%P=strct(i,j)%P_old+strct(i,j)%Pp !(Omega/strct(i,j)%AP)&
+                       !*(&
+                       !+ strct(i,j)%AE*strct(i+1,j  )%P&
+                       !+ strct(i,j)%AW*strct(i-1,j  )%P&
+                       !+ strct(i,j)%AN*strct(i  ,j+1)%P&
+                       !+ strct(i,j)%AS*strct(i  ,j-1)%P&
+                       !- S& ! no source terms
+                       !- strct(i,j)%AP*strct(i,j)%P_old&
+                       !)
+                   if (ISNAN(strct(i,j)%u)) THEN
+                       WRITE(*,*) "NaN on ",i,j
+                       STOP
+                   END IF
+            END DO
+        END DO
+        DO i=2,nx
+            DO j=1,ny
+                strct(i  ,j  )%u=(strct(i-1,j  )%Pp - strct(i  ,j  )%Pp) *dy/strct(i,j)%AW
+            END DO
+        END DO
+        !strct(i  ,j  )%ue=(strct(i  ,j  )%P_old - strct(i+1,j  )%P_old) *dy/strct(i,j)%AE
+        !strct(i  ,j  )%vn=(strct(i  ,j  )%P_old - strct(i  ,j+1)%P_old) *dx/strct(i,j)%AN
+        DO i=1,nx
+            DO j=2,ny
+                strct(i  ,j  )%v=(strct(i  ,j-1)%Pp - strct(i  ,j  )%Pp) *dx/strct(i,j)%AS
             END DO
         END DO
 
-        DO i=1,nx
-            DO j=1,ny
-                strct(i,j)%Pp=strct(i,j)%P_old+(Omega/strct(i,j)%AP)&
-                       *(&
-                       + strct(i,j)%AE*strct(i+1,j  )%P_old&
-                       + strct(i,j)%AW*strct(i-1,j  )%P_old&
-                       + strct(i,j)%AN*strct(i  ,j+1)%P_old&
-                       + strct(i,j)%AS*strct(i  ,j-1)%P_old&
-                       !- S& ! no source terms
-                       - strct(i,j)%AP*strct(i,j)%P_old&
-                       )
-            END DO
-        END DO
     END SUBROUTINE vel_correction
 
 
