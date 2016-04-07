@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x 100
-#define max_y 100
+#define max_x 10
+#define max_y 10
 ! x and y number of cells plus 1
-#define max_xp 101
-#define max_yp 101
+#define max_xp 11
+#define max_yp 11
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p 102
-#define max_y2p 102
+#define max_x2p 12
+#define max_y2p 12
 
 
 
@@ -34,6 +34,7 @@ PROGRAM project3
     Ru = 0.
     Tu = 1.
     Bu = 0.
+    data%u          = 0.  ! initialize all data
     ! left Boundary
     data(0,:)%u     = Lu
     ! bottom boundary
@@ -48,8 +49,8 @@ PROGRAM project3
 
     ! initialize v
     data%v_old = 0.
-    data(4,2:max_x-2)%v_old = -1.24! initialize strange value to get v to converge
-    data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
+    !data(4,2:max_x-2)%v_old = -1.24! initialize strange value to get v to converge
+    !data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
     data%v     = data%v_old
     
     ! initialize P values
@@ -57,9 +58,9 @@ PROGRAM project3
     !data%Pn=1.
     !data%Pw=1.
     !data%Ps=1.
-    data%P =2.
-    data%Pp=2.
-    data%P_old=1.
+    data%P =0.
+    data%Pp=0.
+    data%P_old=0.
     !data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
     !data(38,2:max_x-2)%P_old = 5.24! initialize strange value to get p to converge
 
@@ -72,7 +73,9 @@ PROGRAM project3
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
-    DO iter=0,10000
+    write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
+    write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
+    DO iter=0,20000
         ! step 1 solve discretised momentum equations
         CALL mom_uv(data,dx,dy,max_x,max_y)
 
@@ -102,30 +105,36 @@ PROGRAM project3
 
 
         ! if converged then stop
-        IF (error_RSS < 0.0000001) THEN
+        IF (error_RSS < 0.000000000001) THEN
+            WRITE(*,*) "converged on iteration and error big loop = ",iter,error_RSS
             EXIT
         ELSE
             WRITE(*,*) "iteration and error big loop = ",iter,error_RSS
         END IF
     END DO
 
+    write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
 
 
 CALL CPU_TIME(TIME2)
 WRITE(*,*) "CPU Time = ",TIME2-TIME1
 !output
 ! user will need to specify size of 
-open(unit=9,file="output/x.txt")
+open(unit= 9,file="output/x.txt")
 open(unit=10,file="output/y.txt")
-open(unit=11,file="output/u.txt")
-open(unit=12,file="output/v.txt")
-open(unit=13,file="output/P.txt")
+open(unit=11,file="output/xu.txt")
+open(unit=12,file="output/yv.txt")
+open(unit=13,file="output/u.txt")
+open(unit=14,file="output/v.txt")
+open(unit=15,file="output/P.txt")
 !100 FORMAT (max_x2p F14.6)
 100 FORMAT (max_x2p ES16.7)
-WRITE( 9,100) ( data(:,i)%x ,i=0,max_yp )
-WRITE(10,100) ( data(:,i)%y ,i=0,max_yp )
-WRITE(11,100) ( data(:,i)%u ,i=0,max_yp )
-WRITE(12,100) ( data(:,i)%v ,i=0,max_yp )
-WRITE(13,100) ( data(:,i)%Pp,i=0,max_yp )
-close(9);close(10);close(11);close(12);close(13)
+WRITE( 9,100) ( data(:,i)%xp,i=0,max_yp )
+WRITE(10,100) ( data(:,i)%yp,i=0,max_yp )
+WRITE(11,100) ( data(:,i)%xu,i=0,max_yp )
+WRITE(12,100) ( data(:,i)%yv,i=0,max_yp )
+WRITE(13,100) ( data(:,i)%u ,i=0,max_yp )
+WRITE(14,100) ( data(:,i)%v ,i=0,max_yp )
+WRITE(15,100) ( data(:,i)%Pp,i=0,max_yp )
+close(9);close(10);close(11);close(12);close(13);close(14);close(15)
 END PROGRAM project3
