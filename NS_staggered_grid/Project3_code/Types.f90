@@ -60,7 +60,8 @@ CONTAINS
         !REAL    ::  mu = 0.01
         !REAL    ::  rho= 1.
         REAL    ::  mdot ! temporary value for mass flow values
-        INTEGER ::  i,j !loop iterators
+        INTEGER ::  i,j,iter !loop iterators
+        REAL    ::  error
         !REAL    ::  Omega = 0.5
        ! DO i=1,nx
        !     DO j=1,ny
@@ -102,37 +103,67 @@ CONTAINS
         END DO
 
         
-        DO i=2,nx
-            DO j=1,ny
-                strct(i,j)%u = (1.-Omega)*strct(i,j)%u_old &
-                                + &
-                                (Omega/strct(i,j)%AP) &
-                                * (&
-                                    strct(i,j)%AE*strct(i+1,j  )%u +&
-                                    strct(i,j)%AN*strct(i  ,j+1)%u +&
-                                    strct(i,j)%AW*strct(i-1,j  )%u +&
-                                    strct(i,j)%AS*strct(i  ,j-1)%u +&
-                                    (strct(i-1,j)%P_old-strct(i  ,j)%P_old)  *&
-                                    dy                              &
-                                )
+        DO iter=1,10000
+            DO i=2,nx
+                DO j=1,ny
+                    strct(i,j)%u = (1.-Omega)*strct(i,j)%u_old &
+                        + &
+                        (Omega/strct(i,j)%AP) &
+                        * (&
+                        strct(i,j)%AE*strct(i+1,j  )%u +&
+                        strct(i,j)%AN*strct(i  ,j+1)%u +&
+                        strct(i,j)%AW*strct(i-1,j  )%u +&
+                        strct(i,j)%AS*strct(i  ,j-1)%u +&
+                        (strct(i-1,j)%P_old-strct(i  ,j)%P_old)  *&
+                        dy                              &
+                        )
+                END DO
             END DO
+            error = 0.
+            DO i=1,nx
+                DO j=1,ny
+                    error = error + (strct(i,j)%u-strct(i,j)%u_old)**2
+                END DO
+            END DO
+            error= sqrt(error)
+            ! if converged then stop
+            IF (error < 0.0000001) THEN
+                EXIT
+            ELSE
+                WRITE(*,*) "iteration and error = ",iter,error
+            END IF
         END DO
 
-        DO i=1,nx
-            DO j=2,ny
-                strct(i,j)%v = (1.-Omega)*strct(i,j)%v_old &
-                                + &
-                                (Omega/strct(i,j)%AP) &
-                                * (&
-                                    strct(i,j)%AE*strct(i+1,j  )%v +&
-                                    strct(i,j)%AN*strct(i  ,j+1)%v +&
-                                    strct(i,j)%AW*strct(i-1,j  )%v +&
-                                    strct(i,j)%AS*strct(i  ,j-1)%v +&
-                                    (strct(i,j-1)%P_old-strct(i,j  )%P_old)  *&
-                                    dx                              &
-                                )
+        !DO iter=1,10000
+            DO i=1,nx
+                DO j=2,ny
+                    strct(i,j)%v = (1.-Omega)*strct(i,j)%v_old &
+                        + &
+                        (Omega/strct(i,j)%AP) &
+                        * (&
+                        strct(i,j)%AE*strct(i+1,j  )%v +&
+                        strct(i,j)%AN*strct(i  ,j+1)%v +&
+                        strct(i,j)%AW*strct(i-1,j  )%v +&
+                        strct(i,j)%AS*strct(i  ,j-1)%v +&
+                        (strct(i,j-1)%P_old-strct(i,j  )%P_old)  *&
+                        dx                              &
+                        )
+                END DO
             END DO
-        END DO
+            !error = 0.
+            !DO i=1,nx
+                !DO j=1,ny
+                    !error = error + (strct(i,j)%u-strct(i,j)%u_old)**2
+                !END DO
+            !END DO
+            !error= sqrt(error)
+            !! if converged then stop
+            !IF (error < 0.0000001) THEN
+                !EXIT
+            !ELSE
+                !WRITE(*,*) "iteration and error = ",iter,error
+            !END IF
+        !END DO
     END SUBROUTINE mom_uv
 
 

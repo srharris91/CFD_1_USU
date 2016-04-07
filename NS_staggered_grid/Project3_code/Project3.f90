@@ -72,13 +72,13 @@ PROGRAM project3
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
-    DO iter=0,100000
+    DO iter=0,10000
         ! step 1 solve discretised momentum equations
         CALL mom_uv(data,dx,dy,max_x,max_y)
 
         ! step 2 Solve pressure correction equation
         ! step 3 Correct pressure and velocities
-        CALL vel_correction(data,dx,dy,max_x,max_y)
+        !CALL vel_correction(data,dx,dy,max_x,max_y)
 
 
         ! step 4 Solve all other discretised transport equations
@@ -105,7 +105,7 @@ PROGRAM project3
         IF (error_RSS < 0.0000001) THEN
             EXIT
         ELSE
-            WRITE(*,*) "iteration and error = ",iter,error_RSS
+            WRITE(*,*) "iteration and error big loop = ",iter,error_RSS
         END IF
     END DO
 
