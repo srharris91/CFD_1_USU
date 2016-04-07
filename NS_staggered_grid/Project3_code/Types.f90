@@ -82,43 +82,18 @@ CONTAINS
         !     DO j=1,ny
         DO i=2,nx
             DO j=1,ny
-                !IF (i==1) THEN !BC
-                    !mdot                =   rho*strct(i-1,j  )%u*dy ! West face
-                    !strct(i,j)%AW       =   max( mdot,0.) + mu*dy*2./dx
-                !ELSE
-                    mdot                =   rho*strct(i-1,j  )%u*dy ! West face
-                    strct(i,j)%AW       =   max( mdot,0.) + mu*dy/dx
-                !END IF
-                !IF (i==nx) THEN !BC
-                    !mdot                =   rho*strct(i+1,j  )%u*dy ! east face
-                    !strct(i,j)%AE       =   max(-mdot,0.) + mu*dy*2./dx
-                !ELSE 
-                    mdot                =   rho*strct(i+1,j  )%u*dy ! east face
+                    mdot                =   rho*(strct(i+1,j  )%u+strct(i  ,j  )%u)/2.*dy ! east face
                     strct(i,j)%AE       =   max(-mdot,0.) + mu*dy/dx
-                !END IF
-                IF (j==ny) THEN !BC
-                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
-                    !mdot            =   0. ! south face
-                    strct(i,j)%AN   =   max(-mdot,0.) + mu*dx*2./dy
-                ELSE
-                    mdot            =   rho*strct(i  ,j+1)%v*dx ! north face
-                    !mdot            =   0. ! south face
-                    strct(i,j)%AN   =   max(-mdot,0.) + mu*dx/dy
-                END IF
-                IF (j==1) THEN !BC
-                    mdot            =   rho*strct(i  ,j-1)%v*dx ! south face
-                    !mdot            =   0. ! north face
-                    strct(i,j)%AS   =   max( mdot,0.) + mu*dx*2./dy
-                ELSE
-                    mdot            =   rho*strct(i  ,j-1)%v*dx ! south face
-                    !mdot            =   0. ! north face
-                    strct(i,j)%AS   =   max( mdot,0.) + mu*dx/dy
-                END IF
-                strct(i,j)%AP       =   strct(i,j)%AE + &
-                                        strct(i,j)%AN + &
-                                        strct(i,j)%AW + &
-                                        strct(i,j)%AS
-                !WRITE(*,*) i,j,strct(i,j)%AP,strct(i,j)%u
+                    mdot                =   rho*(strct(i-1,j+1)%v+strct(i  ,j+1)%v)/2.*dx ! north face
+                    strct(i,j)%AN       =   max(-mdot,0.) + mu*dx/dy
+                    mdot                =   rho*(strct(i-1,j  )%u+strct(i  ,j  )%u)/2.*dy ! West face
+                    strct(i,j)%AW       =   max( mdot,0.) + mu*dy/dx
+                    mdot                =   rho*(strct(i-1,j  )%v+strct(i  ,j  )%v)/2.*dx ! south face
+                    strct(i,j)%AS       =   max( mdot,0.) + mu*dx/dy
+                strct(i,j)%AP           =   strct(i,j)%AE + &
+                                            strct(i,j)%AN + &
+                                            strct(i,j)%AW + &
+                                            strct(i,j)%AS
             END DO
         END DO
 

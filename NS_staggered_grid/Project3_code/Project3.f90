@@ -54,27 +54,18 @@ PROGRAM project3
     data%v     = data%v_old
     
     ! initialize P values
-    !data%Pe=1.
-    !data%Pn=1.
-    !data%Pw=1.
-    !data%Ps=1.
-    data%P =0.
     data%Pp=0.
     data%P_old=0.
     !data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
     !data(38,2:max_x-2)%P_old = 5.24! initialize strange value to get p to converge
 
     ! initialize velocity correction terms
-    !data%uw=0.
-    !data%ue=0.
-    !data%vn=0.
-    !data%vs=0.
 
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
     write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
-    write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
+    !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
     DO iter=0,20000
         ! step 1 solve discretised momentum equations
         CALL mom_uv(data,dx,dy,max_x,max_y)
@@ -98,7 +89,7 @@ PROGRAM project3
         END DO
         error_RSS = sqrt(error_RSS)
         ! reset values
-        data%u_old = data%u
+        !data%u_old = data%u
         data%v_old = data%v
         data%P_old = data%Pp
         !WRITE(*,*) "error = ",error_RSS
