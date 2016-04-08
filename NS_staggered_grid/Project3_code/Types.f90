@@ -7,8 +7,8 @@ MODULE types
     REAL    ::  rho= 1.     ! density
     TYPE::dat
         REAL::xu,yv,xp,yp
-        REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
-        REAL::AP,AE,AN,AS,AW
+        REAL::u,v,u_old,v_old,u_orig,v_orig !u,v is in bottom left corner, or south and west sides of cell
+        REAL::APu,AEu,ANu,ASu,AWu,Apv,AEv,ANv,ASv,AWv,APp,AEp,ANp,AWp,ASp
         !REAL::Pe,Pn,Ps,Pw,Pp,P_old
         REAL::P,Pp,P_old
         INTEGER::n
@@ -67,147 +67,155 @@ CONTAINS
         END DO
     END SUBROUTINE set_xy
 
-    SUBROUTINE mom_uv(strct,dx,dy,nx,ny)
+    SUBROUTINE mom_uv(strct,dx,dy,nx,ny,iter)
         ! requires uniform grid of dx and dy spacing
         REAL,INTENT(IN)     ::  dx,dy
-        INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
+        INTEGER,INTENT(IN)  ::  nx,ny,iter   ! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
         !REAL    ::  mu = 0.01
         !REAL    ::  rho= 1.
         REAL    ::  mdot ! temporary value for mass flow values
-        INTEGER ::  i,j,iter !loop iterators
+        INTEGER ::  i,j!loop iterators
         REAL    ::  error
         !REAL    ::  Omega = 0.5
         ! DO i=1,nx
         !     DO j=1,ny
-        DO i=2,nx
-            DO j=1,ny
-                    mdot                =   rho*(strct(i+1,j  )%u+strct(i  ,j  )%u)/2.*dy ! east face
-                    strct(i,j)%AE       =   max(-mdot,0.) + mu*dy/dx
-                    mdot                =   rho*(strct(i-1,j+1)%v+strct(i  ,j+1)%v)/2.*dx ! north face
-                    strct(i,j)%AN       =   max(-mdot,0.) + mu*dx/dy
-                    mdot                =   rho*(strct(i-1,j  )%u+strct(i  ,j  )%u)/2.*dy ! West face
-                    strct(i,j)%AW       =   max( mdot,0.) + mu*dy/dx
-                    mdot                =   rho*(strct(i-1,j  )%v+strct(i  ,j  )%v)/2.*dx ! south face
-                    strct(i,j)%AS       =   max( mdot,0.) + mu*dx/dy
-                strct(i,j)%AP           =   strct(i,j)%AE + &
-                                            strct(i,j)%AN + &
-                                            strct(i,j)%AW + &
-                                            strct(i,j)%AS
+        IF (iter == 0) THEN
+            DO i=1,nx
+                DO j=1,ny
+                    mdot                =   rho*(strct(i+1,j  )%u_orig+strct(i  ,j  )%u_orig)/2.*dy ! east face
+                    strct(i,j)%AEu      =   max(-mdot,0.) + mu*dy/dx
+                    mdot                =   rho*(strct(i-1,j+1)%v_orig+strct(i  ,j+1)%v_orig)/2.*dx ! north face
+                    strct(i,j)%ANu      =   max(-mdot,0.) + mu*dx/dy
+                    mdot                =   rho*(strct(i-1,j  )%u_orig+strct(i  ,j  )%u_orig)/2.*dy ! West face
+                    strct(i,j)%AWu      =   max( mdot,0.) + mu*dy/dx
+                    mdot                =   rho*(strct(i-1,j  )%v_orig+strct(i  ,j  )%v_orig)/2.*dx ! south face
+                    strct(i,j)%ASu      =   max( mdot,0.) + mu*dx/dy
+                    strct(i,j)%APu      =   strct(i,j)%AEu + &
+                        strct(i,j)%ANu + &
+                        strct(i,j)%AWu + &
+                        strct(i,j)%ASu
+                END DO
             END DO
-        END DO
+        END IF
 
 
         !DO iter=1,100
         DO i=2,nx
             DO j=1,ny
-                strct(i,j)%u = (1.-Omega)*strct(i,j)%u_old &
+                strct(i,j)%u = (1.-Omega)*strct(i,j)%u_orig&
                     + &
-                    (Omega/strct(i,j)%AP) &
+                    (Omega/strct(i,j)%APu) &
                     * (&
-                    strct(i  ,j  )%AE*strct(i+1,j  )%u +&
-                    strct(i  ,j  )%AN*strct(i  ,j+1)%u +&
-                    strct(i  ,j  )%AW*strct(i-1,j  )%u +&
-                    strct(i  ,j  )%AS*strct(i  ,j-1)%u +&
+                    strct(i  ,j  )%AEu*strct(i+1,j  )%u +&
+                    strct(i  ,j  )%ANu*strct(i  ,j+1)%u +&
+                    strct(i  ,j  )%AWu*strct(i-1,j  )%u +&
+                    strct(i  ,j  )%ASu*strct(i  ,j-1)%u +&
                     (strct(i-1,j)%P_old-strct(i  ,j)%P_old)  *&
                     dy                              &
                     )
             END DO
         END DO
-        !error = 0.
-        !DO i=1,nx
-        !DO j=1,ny
-        !error = error + (strct(i,j)%u-strct(i,j)%u_old)**2
-        !END DO
-        !END DO
-        !error= sqrt(error)
-        !! if converged then stop
-        !IF (error < 0.0000001) THEN
-        !EXIT
-        !ELSE
-        !WRITE(*,*) "iteration and error = ",iter,error
-        !END IF
-        !END DO
-
-        !DO iter=1,10000
-        !DO i=1,nx
-        !DO j=2,ny
-        !strct(i,j)%v = (1.-Omega)*strct(i,j)%v_old &
-        !+ &
-        !(Omega/strct(i,j)%AP) &
-        !* (&
-        !strct(i,j)%AE*strct(i+1,j  )%v +&
-        !strct(i,j)%AN*strct(i  ,j+1)%v +&
-        !strct(i,j)%AW*strct(i-1,j  )%v +&
-        !strct(i,j)%AS*strct(i  ,j-1)%v +&
-        !(strct(i,j-1)%P_old-strct(i,j  )%P_old)  *&
-        !dx                              &
-        !)
-        !END DO
-        !END DO
-        !error = 0.
-        !DO i=1,nx
-        !DO j=1,ny
-        !error = error + (strct(i,j)%u-strct(i,j)%u_old)**2
-        !END DO
-        !END DO
-        !error= sqrt(error)
-        !! if converged then stop
-        !IF (error < 0.0000001) THEN
-        !EXIT
-        !ELSE
-        !WRITE(*,*) "iteration and error = ",iter,error
-        !END IF
-        !END DO
+        IF (iter == 0) THEN
+            DO i=1,nx
+                DO j=1,ny
+                    mdot                =   rho*(strct(i+1,j-1)%u_orig+strct(i+1,j  )%u_orig)/2.*dy ! east face
+                    strct(i,j)%AEv      =   max(-mdot,0.) + mu*dy/dx
+                    mdot                =   rho*(strct(i  ,j+1)%v_orig+strct(i  ,j  )%v_orig)/2.*dx ! north face
+                    strct(i,j)%ANv      =   max(-mdot,0.) + mu*dx/dy
+                    mdot                =   rho*(strct(i  ,j-1)%u_orig+strct(i  ,j  )%u_orig)/2.*dy ! West face
+                    strct(i,j)%AWv      =   max( mdot,0.) + mu*dy/dx
+                    mdot                =   rho*(strct(i  ,j-1)%v_orig+strct(i  ,j  )%v_orig)/2.*dx ! south face
+                    strct(i,j)%ASv      =   max( mdot,0.) + mu*dx/dy
+                    strct(i,j)%APv      =   strct(i,j)%AEv + &
+                        strct(i,j)%ANv + &
+                        strct(i,j)%AWv + &
+                        strct(i,j)%ASv
+                END DO
+            END DO
+        END IF
+        DO i=1,nx
+            DO j=2,ny
+                strct(i,j)%v = (1.-Omega)*strct(i,j)%v_orig&
+                    + &
+                    (Omega/strct(i,j)%APv) &
+                    * (&
+                    strct(i  ,j  )%AEv*strct(i+1,j  )%v +&
+                    strct(i  ,j  )%ANv*strct(i  ,j+1)%v +&
+                    strct(i  ,j  )%AWv*strct(i-1,j  )%v +&
+                    strct(i  ,j  )%ASv*strct(i  ,j-1)%v +&
+                    (strct(i,j-1)%P_old-strct(i  ,j)%P_old)  *&
+                    dy                              &
+                    )
+            END DO
+        END DO
     END SUBROUTINE mom_uv
 
 
-    SUBROUTINE vel_correction(strct,dx,dy,nx,ny)
+    SUBROUTINE vel_correction(strct,dx,dy,nx,ny,iter)
         ! requires uniform grid of dx and dy spacing
         REAL,INTENT(IN)     ::  dx,dy
-        INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
+        INTEGER,INTENT(IN)  ::  nx,ny,iter   ! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
         !REAL    ::  mu = 0.01
         !REAL    ::  rho= 1.
         !REAL    ::  mdot ! temporary value for mass flow values
         INTEGER ::  i,j !loop iterators
         !REAL    ::  Omega = 0.5
+
+        IF (iter == 0) THEN
+            DO i=1,nx
+                DO j=1,ny
+                    IF (i==nx) THEN
+                        strct(i,j)%AEp      =   0.
+                    ELSE 
+                        strct(i,j)%AEp      =   rho*dy*dy/strct(i,j)%AEu
+                    END IF
+                    IF (j==ny) THEN
+                        strct(i,j)%ANp      =   0.
+                    ELSE
+                        strct(i,j)%ANp      =   rho*dx*dx/strct(i,j)%ANv
+                    END IF
+                    IF (i==1) THEN
+                        strct(i,j)%AWp      =   0.
+                    ELSE
+                        strct(i,j)%AWp      =   rho*dy*dy/strct(i,j)%AWu
+                    END IF
+                    IF (j==1) THEN
+                        strct(i,j)%ASp      =   0.
+                    ELSE
+                        strct(i,j)%ASp      =   rho*dx*dx/strct(i,j)%ASv
+                    END IF
+                    strct(i,j)%APp          =   strct(i,j)%AEp + &
+                        strct(i,j)%ANp + &
+                        strct(i,j)%AWp + &
+                        strct(i,j)%ASp
+                END DO
+            END DO
+        END IF
+
         DO i=1,nx
             DO j=1,ny
-                strct(i,j)%Pp = (Omega/strct(i,j)%AP)&
+                strct(i,j)%Pp = (Omega/strct(i,j)%APp)&
                     *(&
-                    + strct(i,j)%AE*strct(i+1,j  )%P&
-                    + strct(i,j)%AW*strct(i-1,j  )%P&
-                    + strct(i,j)%AN*strct(i  ,j+1)%P&
-                    + strct(i,j)%AS*strct(i  ,j-1)%P&
-                    - strct(i,j)%AP*strct(i,j)%P_old&
+                    + strct(i,j)%AEp*strct(i+1,j  )%P_old&
+                    + strct(i,j)%AWp*strct(i-1,j  )%P_old&
+                    + strct(i,j)%ANp*strct(i  ,j+1)%P_old&
+                    + strct(i,j)%ASp*strct(i  ,j-1)%P_old&
+                    - strct(i,j)%APp*strct(i,j)%P_old&
                     )
 
-                strct(i,j)%P=strct(i,j)%P_old+strct(i,j)%Pp !(Omega/strct(i,j)%AP)&
-                !*(&
-                !+ strct(i,j)%AE*strct(i+1,j  )%P&
-                !+ strct(i,j)%AW*strct(i-1,j  )%P&
-                !+ strct(i,j)%AN*strct(i  ,j+1)%P&
-                !+ strct(i,j)%AS*strct(i  ,j-1)%P&
-                !- S& ! no source terms
-                !- strct(i,j)%AP*strct(i,j)%P_old&
-                !)
-                if (ISNAN(strct(i,j)%u)) THEN
-                    WRITE(*,*) "NaN on ",i,j
-                    STOP
-                END IF
+                strct(i,j)%P=strct(i,j)%P_old+strct(i,j)%Pp
             END DO
         END DO
         DO i=2,nx
             DO j=1,ny
-                strct(i  ,j  )%u=(strct(i-1,j  )%Pp - strct(i  ,j  )%Pp) *dy/strct(i,j)%AW
+                strct(i,j)%u=strct(i,j)%u + (strct(i-1,j  )%Pp - strct(i  ,j  )%Pp) *dy/strct(i,j)%AWu
             END DO
         END DO
-        !strct(i  ,j  )%ue=(strct(i  ,j  )%P_old - strct(i+1,j  )%P_old) *dy/strct(i,j)%AE
-        !strct(i  ,j  )%vn=(strct(i  ,j  )%P_old - strct(i  ,j+1)%P_old) *dx/strct(i,j)%AN
         DO i=1,nx
             DO j=2,ny
-                strct(i  ,j  )%v=(strct(i  ,j-1)%Pp - strct(i  ,j  )%Pp) *dx/strct(i,j)%AS
+                strct(i,j)%v=strct(i,j)%v + (strct(i  ,j-1)%Pp - strct(i  ,j  )%Pp) *dx/strct(i,j)%ASv
             END DO
         END DO
 

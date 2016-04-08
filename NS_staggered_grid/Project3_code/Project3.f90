@@ -45,34 +45,39 @@ PROGRAM project3
     data(:,max_xp)%u= Tu
     ! initialize u
     data%u_old  = data%u
+    data%u_orig = data%u
 
 
     ! initialize v
     data%v_old = 0.
-    !data(4,2:max_x-2)%v_old = -1.24! initialize strange value to get v to converge
+    !data(4,4)%v_old = -0.24! initialize strange value to get v to converge
     !data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
     data%v     = data%v_old
+    data%v_orig= data%v_old
+    !data(4,4)%v= -0.04! initialize strange value to get v to converge
+    data(4,4)%v= -10.14! initialize strange value to get v to converge
     
     ! initialize P values
     data%Pp=0.
     data%P_old=0.
-    !data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
-    !data(38,2:max_x-2)%P_old = 5.24! initialize strange value to get p to converge
+    data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
+    data(6,2:max_x-2)%P_old=-5.24! initialize strange value to get p to converge
 
     ! initialize velocity correction terms
 
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
-    write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
+    !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
+    !write(*,*)
     !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
     DO iter=0,20000
         ! step 1 solve discretised momentum equations
-        CALL mom_uv(data,dx,dy,max_x,max_y)
+        CALL mom_uv(data,dx,dy,max_x,max_y,iter)
 
         ! step 2 Solve pressure correction equation
         ! step 3 Correct pressure and velocities
-        !CALL vel_correction(data,dx,dy,max_x,max_y)
+        CALL vel_correction(data,dx,dy,max_x,max_y,iter)
 
 
         ! step 4 Solve all other discretised transport equations
@@ -84,19 +89,19 @@ PROGRAM project3
             DO j=1,max_y
                 error_RSS = error_RSS + (data(i,j)%u-data(i,j)%u_old)**2
                 error_RSS = error_RSS + (data(i,j)%v-data(i,j)%v_old)**2
-                error_RSS = error_RSS + (data(i,j)%Pp-data(i,j)%P_old)**2
+                error_RSS = error_RSS + (data(i,j)%P-data(i,j)%P_old)**2
             END DO
         END DO
         error_RSS = sqrt(error_RSS)
         ! reset values
-        !data%u_old = data%u
+        data%u_old = data%u
         data%v_old = data%v
-        data%P_old = data%Pp
+        data%P_old = data%P
         !WRITE(*,*) "error = ",error_RSS
 
 
         ! if converged then stop
-        IF (error_RSS < 0.000000000001) THEN
+        IF (error_RSS <= 1.E-14) THEN
             WRITE(*,*) "converged on iteration and error big loop = ",iter,error_RSS
             EXIT
         ELSE
@@ -104,7 +109,9 @@ PROGRAM project3
         END IF
     END DO
 
-    write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
+    !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
+    !write(*,*)
+    !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
 
 
 CALL CPU_TIME(TIME2)
