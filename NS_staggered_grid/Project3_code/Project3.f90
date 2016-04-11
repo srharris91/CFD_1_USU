@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x 10
-#define max_y 10
+#define max_x 40
+#define max_y 40
 ! x and y number of cells plus 1
-#define max_xp 11
-#define max_yp 11
+#define max_xp 41
+#define max_yp 41
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p 12
-#define max_y2p 12
+#define max_x2p 42
+#define max_y2p 42
 
 
 
@@ -71,7 +71,7 @@ PROGRAM project3
     !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
     !write(*,*)
     !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
-    DO iter=0,20000
+    DO iter=0,40000
         ! step 1 solve discretised momentum equations
         CALL mom_uv(data,dx,dy,max_x,max_y,iter)
 

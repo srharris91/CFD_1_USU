@@ -103,7 +103,7 @@ CONTAINS
         !DO iter=1,100
         DO i=2,nx
             DO j=1,ny
-                strct(i,j)%u = (1.-Omega)*strct(i,j)%u_orig&
+                strct(i,j)%u = (1.-Omega)*strct(i,j)%u_old &
                     + &
                     (Omega/strct(i,j)%APu) &
                     * (&
@@ -136,7 +136,7 @@ CONTAINS
         END IF
         DO i=1,nx
             DO j=2,ny
-                strct(i,j)%v = (1.-Omega)*strct(i,j)%v_orig&
+                strct(i,j)%v = (1.-Omega)*strct(i,j)%v_old &
                     + &
                     (Omega/strct(i,j)%APv) &
                     * (&
@@ -166,26 +166,26 @@ CONTAINS
         IF (iter == 0) THEN
             DO i=1,nx
                 DO j=1,ny
-                    IF (i==nx) THEN
-                        strct(i,j)%AEp      =   0.
-                    ELSE 
+                    !IF (i==nx) THEN
+                    !strct(i,j)%AEp      =   0.
+                    !ELSE 
                         strct(i,j)%AEp      =   rho*dy*dy/strct(i,j)%AEu
-                    END IF
-                    IF (j==ny) THEN
-                        strct(i,j)%ANp      =   0.
-                    ELSE
+                        !END IF
+                        !IF (j==ny) THEN
+                        !strct(i,j)%ANp      =   0.
+                        !ELSE
                         strct(i,j)%ANp      =   rho*dx*dx/strct(i,j)%ANv
-                    END IF
-                    IF (i==1) THEN
-                        strct(i,j)%AWp      =   0.
-                    ELSE
+                        !END IF
+                        !IF (i==1) THEN
+                        !strct(i,j)%AWp      =   0.
+                        !ELSE
                         strct(i,j)%AWp      =   rho*dy*dy/strct(i,j)%AWu
-                    END IF
-                    IF (j==1) THEN
-                        strct(i,j)%ASp      =   0.
-                    ELSE
+                        !END IF
+                        !IF (j==1) THEN
+                        !strct(i,j)%ASp      =   0.
+                        !ELSE
                         strct(i,j)%ASp      =   rho*dx*dx/strct(i,j)%ASv
-                    END IF
+                        !END IF
                     strct(i,j)%APp          =   strct(i,j)%AEp + &
                         strct(i,j)%ANp + &
                         strct(i,j)%AWp + &
@@ -202,7 +202,7 @@ CONTAINS
                     + strct(i,j)%AWp*strct(i-1,j  )%P_old&
                     + strct(i,j)%ANp*strct(i  ,j+1)%P_old&
                     + strct(i,j)%ASp*strct(i  ,j-1)%P_old&
-                    - strct(i,j)%APp*strct(i,j)%P_old&
+                    - strct(i,j)%APp*strct(i  ,j  )%P_old&
                     )
 
                 strct(i,j)%P=strct(i,j)%P_old+strct(i,j)%Pp

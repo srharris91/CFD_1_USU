@@ -34,8 +34,8 @@ p=get_data('output/P.txt')
 
 
 
-fig=plt.figure(figsize=(4,12))
-ax1=fig.add_subplot(311)
+fig=plt.figure(figsize=(4,15))
+ax1=fig.add_subplot(411)
 ax1.contourf(xu,y,u,20,cmap=plt.cm.jet,origin='lower')
 ax1.set_xlabel(r'$x$')
 ax1.set_ylabel(r'$y$')
@@ -47,7 +47,7 @@ plt.colorbar(im)
 #fig.savefig('output/u.pdf',bbox_inches='tight')
 
 #fig=plt.figure(figsize=(3,3))
-ax1=fig.add_subplot(312)
+ax1=fig.add_subplot(412)
 ax1.contourf(x,yv,v,20,cmap=plt.cm.jet,origin='lower')
 ax1.set_xlabel(r'$x$')
 ax1.set_ylabel(r'$y$')
@@ -60,7 +60,7 @@ plt.colorbar(im)
 
 
 
-ax1=fig.add_subplot(313)
+ax1=fig.add_subplot(413)
 #ax1.contourf(x,y,p,20,cmap=plt.cm.gray,origin='lower')
 ax1.contourf(x,y,p,20,cmap=plt.cm.jet,origin='lower')
 ax1.set_xlabel(r'$x$')
@@ -69,4 +69,12 @@ ax1.set_title(r'$P$')
 im = plt.imshow(p, interpolation='none', extent=(0,1,0,1), cmap=plt.cm.jet, norm=cm.colors.Normalize(vmax=(p).max(), vmin=(p).min()))
 plt.colorbar(im)
 
+ax1=fig.add_subplot(414)
+#ax1.contourf(x,y,p,20,cmap=plt.cm.gray,origin='lower')
+ax1.quiver(x,y,u,v)
+ax1.set_xlabel(r'$x$')
+ax1.set_ylabel(r'$y$')
+ax1.set_title(r'$quiver$')
+#im = plt.imshow(p, interpolation='none', extent=(0,1,0,1), cmap=plt.cm.jet, norm=cm.colors.Normalize(vmax=(p).max(), vmin=(p).min()))
+#plt.colorbar(im)
 fig.savefig('output/uvp.pdf',bbox_inches='tight')
