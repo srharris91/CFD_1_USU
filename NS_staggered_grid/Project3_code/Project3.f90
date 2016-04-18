@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x 40
-#define max_y 40
+#define max_x 100
+#define max_y 100
 ! x and y number of cells plus 1
-#define max_xp 41
-#define max_yp 41
+#define max_xp 101
+#define max_yp 101
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p 42
-#define max_y2p 42
+#define max_x2p 102
+#define max_y2p 102
 
 
 
@@ -22,7 +22,7 @@ PROGRAM project3
     TYPE(dat),DIMENSION(0:max_xp,0:max_yp)::data ! 22 if you count edges (thin cell)
     REAL    ::  TIME1,TIME2  ! for time of computation
     !REAL(KIND=4),DIMENSION(2):: TIMEA  ! for time of computation
-    REAL    ::  error_RSS
+    REAL    ::  error_RSS,error2
     ! set dx and dy and gamma and coefficients (without dividing by delta x between node centers)
     dx=1./REAL(max_x)
     dy=1./REAL(max_y)
@@ -40,9 +40,9 @@ PROGRAM project3
     ! bottom boundary
     data(:,0)%u     = Bu
     ! right boundary
-    data(max_yp,:)%u= Ru
+    data(max_xp,:)%u= Ru
     ! top boundary
-    data(:,max_xp)%u= Tu
+    data(:,max_yp)%u= Tu
     ! initialize u
     data%u_old  = data%u
     data%u_orig = data%u
@@ -50,18 +50,18 @@ PROGRAM project3
 
     ! initialize v
     data%v_old = 0.
-    !data(4,4)%v_old = -0.24! initialize strange value to get v to converge
+    !data(4,4)%v_old = -0.04! initialize strange value to get v to converge
     !data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
     data%v     = data%v_old
     data%v_orig= data%v_old
     !data(4,4)%v= -0.04! initialize strange value to get v to converge
-    data(4,4)%v= -10.14! initialize strange value to get v to converge
+    !data(4,4)%v= -10.14! initialize strange value to get v to converge
     
     ! initialize P values
-    data%Pp=0.
-    data%P_old=0.
-    data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
-    data(6,2:max_x-2)%P_old=-5.24! initialize strange value to get p to converge
+    data%Pp=0.001
+    data%P_old=0.00000001
+    !data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
+    !data(6,2:max_x-2)%P_old=-5.24! initialize strange value to get p to converge
 
     ! initialize velocity correction terms
 
@@ -71,19 +71,21 @@ PROGRAM project3
     !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
     !write(*,*)
     !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
-    DO iter=0,40000
+    DO iter=0,20000
         ! step 1 solve discretised momentum equations
-        CALL mom_uv(data,dx,dy,max_x,max_y,iter)
+        CALL mom_uv(data,dx,dy,max_x,max_y)
 
+!WRITE(*,100) ( data(:,i)%u ,i=0,max_yp )
         ! step 2 Solve pressure correction equation
         ! step 3 Correct pressure and velocities
-        CALL vel_correction(data,dx,dy,max_x,max_y,iter)
+        CALL vel_correction(data,dx,dy,max_x,max_y)
 
 
         ! step 4 Solve all other discretised transport equations
         ! do we need this in this problem?
 
         ! if no convergence, then iterate
+        error2 = error_RSS
         error_RSS = 0.
         DO i=1,max_x
             DO j=1,max_y
@@ -94,18 +96,21 @@ PROGRAM project3
         END DO
         error_RSS = sqrt(error_RSS)
         ! reset values
-        data%u_old = data%u
-        data%v_old = data%v
-        data%P_old = data%P
+        data%u_old  = data%u
+        data%u_orig =data%u
+        data%v_old  = data%v
+        data%v_orig = data%v
+        data%P_old  = data%P
         !WRITE(*,*) "error = ",error_RSS
 
 
         ! if converged then stop
-        IF (error_RSS <= 1.E-14) THEN
-            WRITE(*,*) "converged on iteration and error big loop = ",iter,error_RSS
+        IF (abs(error_RSS-error2) <= Convergence) THEN
+            WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
+            !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
             EXIT
         ELSE
-            WRITE(*,*) "iteration and error big loop = ",iter,error_RSS
+            WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
         END IF
     END DO
 
@@ -133,6 +138,6 @@ WRITE(11,100) ( data(:,i)%xu,i=0,max_yp )
 WRITE(12,100) ( data(:,i)%yv,i=0,max_yp )
 WRITE(13,100) ( data(:,i)%u ,i=0,max_yp )
 WRITE(14,100) ( data(:,i)%v ,i=0,max_yp )
-WRITE(15,100) ( data(:,i)%Pp,i=0,max_yp )
+WRITE(15,100) ( data(:,i)%P ,i=0,max_yp )
 close(9);close(10);close(11);close(12);close(13);close(14);close(15)
 END PROGRAM project3
