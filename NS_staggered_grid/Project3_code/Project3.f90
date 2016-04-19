@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x 100
-#define max_y 100
+#define max_x  30
+#define max_y  30
 ! x and y number of cells plus 1
-#define max_xp 101
-#define max_yp 101
+#define max_xp  31
+#define max_yp  31
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p 102
-#define max_y2p 102
+#define max_x2p  32
+#define max_y2p  32
 
 
 
@@ -45,7 +45,7 @@ PROGRAM project3
     data(:,max_yp)%u= Tu
     ! initialize u
     data%u_old  = data%u
-    data%u_orig = data%u
+    !data%u_orig = data%u
 
 
     ! initialize v
@@ -53,7 +53,7 @@ PROGRAM project3
     !data(4,4)%v_old = -0.04! initialize strange value to get v to converge
     !data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
     data%v     = data%v_old
-    data%v_orig= data%v_old
+    !data%v_orig= data%v_old
     !data(4,4)%v= -0.04! initialize strange value to get v to converge
     !data(4,4)%v= -10.14! initialize strange value to get v to converge
     
@@ -97,15 +97,15 @@ PROGRAM project3
         error_RSS = sqrt(error_RSS)
         ! reset values
         data%u_old  = data%u
-        data%u_orig =data%u
+        !data%u_orig =data%u
         data%v_old  = data%v
-        data%v_orig = data%v
+        !data%v_orig = data%v
         data%P_old  = data%P
         !WRITE(*,*) "error = ",error_RSS
 
 
         ! if converged then stop
-        IF (abs(error_RSS-error2) <= Convergence) THEN
+        IF (abs(error_RSS-error2) <= Convergence2) THEN
             WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
             !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
             EXIT
