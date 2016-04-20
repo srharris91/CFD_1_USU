@@ -273,6 +273,58 @@ CONTAINS
         END DO
 
     END SUBROUTINE vel_correction
+    SUBROUTINE Solve_NS(strct,dx,dy,nx,ny)
+        ! requires uniform grid of dx and dy spacing
+        REAL,INTENT(IN)     ::  dx,dy
+        INTEGER,INTENT(IN)  ::  nx,ny! size of strct in x and y directions 
+        TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
+        REAL    ::  mdot ! temporary value for mass flow values
+        INTEGER ::  i,j,iter=0!loop iterators
+        REAL    ::  error2=1.,error_RSS=0.
+
+    DO iter=0,20000
+        ! step 1 solve discretised momentum equations
+        CALL mom_uv(strct,dx,dy,nx,ny)
+
+!WRITE(*,100) ( data(:,i)%u ,i=0,max_yp )
+        ! step 2 Solve pressure correction equation
+        ! step 3 Correct pressure and velocities
+        CALL vel_correction(strct,dx,dy,nx,ny)
+
+
+        ! step 4 Solve all other discretised transport equations
+
+        ! if no convergence, then iterate
+        error2 = error_RSS
+        error_RSS = 0.
+        DO i=1,nx
+            DO j=1,ny
+                error_RSS = error_RSS + (strct(i,j)%u-strct(i,j)%u_old)**2
+                error_RSS = error_RSS + (strct(i,j)%v-strct(i,j)%v_old)**2
+                error_RSS = error_RSS + (strct(i,j)%P-strct(i,j)%P_old)**2
+            END DO
+        END DO
+        error_RSS = sqrt(error_RSS)
+        ! reset values
+        strct%u_old  = strct%u
+        strct%v_old  = strct%v
+        strct%P_old  = strct%P
+        !WRITE(*,*) "error = ",error_RSS
+
+
+        ! if converged then stop
+        IF (abs(error_RSS-error2) <= Convergence2) THEN
+            WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
+            !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
+            EXIT
+        ELSE
+            WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
+        END IF
+    END DO
+
+
+
+    END SUBROUTINE Solve_NS
 
 
 

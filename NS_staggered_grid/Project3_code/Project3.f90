@@ -45,99 +45,47 @@ PROGRAM project3
     data(:,max_yp)%u= Tu
     ! initialize u
     data%u_old  = data%u
-    !data%u_orig = data%u
 
 
     ! initialize v
     data%v_old = 0.
-    !data(4,4)%v_old = -0.04! initialize strange value to get v to converge
-    !data(38,2:max_x-2)%v_old = 1.24! initialize strange value to get v to converge
     data%v     = data%v_old
-    !data%v_orig= data%v_old
-    !data(4,4)%v= -0.04! initialize strange value to get v to converge
-    !data(4,4)%v= -10.14! initialize strange value to get v to converge
-    
+
     ! initialize P values
     data%Pp=0.001
     data%P_old=0.00000001
-    !data(4,2:max_x-2)%P_old = -5.24! initialize strange value to get p to converge
-    !data(6,2:max_x-2)%P_old=-5.24! initialize strange value to get p to converge
-
-    ! initialize velocity correction terms
 
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method
     CALL CPU_TIME(TIME1)
-    !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
-    !write(*,*)
-    !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
-    DO iter=0,20000
-        ! step 1 solve discretised momentum equations
-        CALL mom_uv(data,dx,dy,max_x,max_y)
-
-!WRITE(*,100) ( data(:,i)%u ,i=0,max_yp )
-        ! step 2 Solve pressure correction equation
-        ! step 3 Correct pressure and velocities
-        CALL vel_correction(data,dx,dy,max_x,max_y)
-
-
-        ! step 4 Solve all other discretised transport equations
-        ! do we need this in this problem?
-
-        ! if no convergence, then iterate
-        error2 = error_RSS
-        error_RSS = 0.
-        DO i=1,max_x
-            DO j=1,max_y
-                error_RSS = error_RSS + (data(i,j)%u-data(i,j)%u_old)**2
-                error_RSS = error_RSS + (data(i,j)%v-data(i,j)%v_old)**2
-                error_RSS = error_RSS + (data(i,j)%P-data(i,j)%P_old)**2
+    CALL Solve_NS(data,dx,dy,max_x,max_y)
+    CALL CPU_TIME(TIME2)
+    WRITE(*,*) "CPU Time = ",TIME2-TIME1
+    !output
+    ! user will need to specify size of 
+    open(unit= 9,file="output/x.txt")
+    open(unit=10,file="output/y.txt")
+    open(unit=11,file="output/xu.txt")
+    open(unit=12,file="output/yv.txt")
+    open(unit=13,file="output/u.txt")
+    open(unit=14,file="output/v.txt")
+    open(unit=15,file="output/P.txt")
+    open(unit=16,file="output/u_spot.txt")
+    100 FORMAT (max_x2p ES16.7)
+    101 FORMAT (2ES16.7)
+    WRITE( 9,100) ( data(:,i)%xp,i=0,max_yp )
+    WRITE(10,100) ( data(:,i)%yp,i=0,max_yp )
+    WRITE(11,100) ( data(:,i)%xu,i=0,max_yp )
+    WRITE(12,100) ( data(:,i)%yv,i=0,max_yp )
+    WRITE(13,100) ( data(:,i)%u ,i=0,max_yp )
+    WRITE(14,100) ( data(:,i)%v ,i=0,max_yp )
+    WRITE(15,100) ( data(:,i)%P ,i=0,max_yp )
+    DO i=0,max_xp
+        IF (data(i,1)%xu <= 0.51 .AND. data(i,1)%xu>=0.49) THEN
+            DO j=0,max_yp
+                WRITE(16,101) data(i,j)%u,data(i,j)%yp
             END DO
-        END DO
-        error_RSS = sqrt(error_RSS)
-        ! reset values
-        data%u_old  = data%u
-        !data%u_orig =data%u
-        data%v_old  = data%v
-        !data%v_orig = data%v
-        data%P_old  = data%P
-        !WRITE(*,*) "error = ",error_RSS
-
-
-        ! if converged then stop
-        IF (abs(error_RSS-error2) <= Convergence2) THEN
-            WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
-            !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
-            EXIT
-        ELSE
-            WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
         END IF
     END DO
-
-    !write(*,"(12ES16.7)") (data(0:max_xp,j)%u,j=max_yp,0,-1)
-    !write(*,*)
-    !write(*,"(12ES16.7)") (data(0:max_xp,j)%v,j=max_yp,0,-1)
-
-
-CALL CPU_TIME(TIME2)
-WRITE(*,*) "CPU Time = ",TIME2-TIME1
-!output
-! user will need to specify size of 
-open(unit= 9,file="output/x.txt")
-open(unit=10,file="output/y.txt")
-open(unit=11,file="output/xu.txt")
-open(unit=12,file="output/yv.txt")
-open(unit=13,file="output/u.txt")
-open(unit=14,file="output/v.txt")
-open(unit=15,file="output/P.txt")
-!100 FORMAT (max_x2p F14.6)
-100 FORMAT (max_x2p ES16.7)
-WRITE( 9,100) ( data(:,i)%xp,i=0,max_yp )
-WRITE(10,100) ( data(:,i)%yp,i=0,max_yp )
-WRITE(11,100) ( data(:,i)%xu,i=0,max_yp )
-WRITE(12,100) ( data(:,i)%yv,i=0,max_yp )
-WRITE(13,100) ( data(:,i)%u ,i=0,max_yp )
-WRITE(14,100) ( data(:,i)%v ,i=0,max_yp )
-WRITE(15,100) ( data(:,i)%P ,i=0,max_yp )
-close(9);close(10);close(11);close(12);close(13);close(14);close(15)
+    close(9);close(10);close(11);close(12);close(13);close(14);close(15);close(16)
 END PROGRAM project3
