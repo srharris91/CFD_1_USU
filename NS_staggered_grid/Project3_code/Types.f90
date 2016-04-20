@@ -18,28 +18,28 @@ MODULE types
         INTEGER::n
     END TYPE dat
 CONTAINS
-    SUBROUTINE set_xy (strct,dx,dy,nx,ny)
-        REAL,INTENT(IN)     ::  dx,dy
-        INTEGER,INTENT(IN)  ::  nx,ny   ! size of strct in x and y directions 
-        TYPE(dat),DIMENSION(0:nx,0:ny),INTENT(INOUT)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
-        INTEGER ::  i,j,n   ! for do loops and n is counter for cell number
-        REAL    ::  xi,yi   ! x and y values for each cell
+    SUBROUTINe set_xy (strct,dx,dy,nx,ny)
+        real,intent(in)     ::  dx,dy
+        integer,intent(in)  ::  nx,ny   ! size of strct in x and y directions 
+        type(dat),dimension(0:,0:),intent(inout)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
+        integer ::  i,j,n   ! for do loops and n is counter for cell number
+        real    ::  xi,yi   ! x and y values for each cell
         ! left boundary
         strct(0,:)%xp= 0.
         strct(0,0)%yp= 0.
-        strct(0,1:nx-1)%yp= RESHAPE((/ (i*dy - dy/2. ,i=1,nx-1) /),(/ nx-1/))
-        strct(0,nx+0)%yp= 1.
+        strct(0,1:ny-1)%yp= reshape((/ (i*dy - dy/2. ,i=1,ny-1) /),(/ ny-1/))
+        strct(0,ny+0)%yp= 1.
         ! bottom boundary
         strct(0,0)%xp= 0.
-        strct(1:ny-1,0)%xp= RESHAPE((/ (i*dx - dx/2. ,i=1,ny-1) /),(/ ny-1/))
-        strct(ny+0,0)%xp= 1.
+        strct(1:nx-1,0)%xp= reshape((/ (i*dx - dx/2. ,i=1,nx-1) /),(/ nx-1/))
+        strct(nx+0,0)%xp= 1.
         strct(:,0)%yp= 0.
         ! right boundary
-        strct(ny+0,:)%xp= 1.
-        strct(ny+0,:)%yp= strct(0,:)%yp
+        strct(nx+0,:)%xp= 1.
+        strct(nx+0,:)%yp= strct(0,:)%yp
         ! top boundary
-        strct(:,nx+0)%xp= strct(:,0)%xp
-        strct(:,nx+0)%yp= 1.
+        strct(:,ny+0)%xp= strct(:,0)%xp
+        strct(:,ny+0)%yp= 1.
         ! set xu and yv to similar values
         !top
         strct(:,ny)%xu=strct(:,ny)%xp-dx/2.
@@ -53,6 +53,57 @@ CONTAINS
         !right
         strct(nx,:)%xu=1.
         strct(nx,:)%yv=1.
+        n=1                     ! cell number 1
+        DO i=1,ny-1             ! 1 to ny-2 for boundary nodes (we only are iterating through the middle values)
+            yi = i*dy - dy/2.   ! y coordinate
+            DO j=1,nx-1
+                xi = j*dx - dx/2.       ! x coordinate
+                strct(j,i)%n = n        ! input n node
+                strct(j,i)%xp= xi       ! x coordinate to strct
+                strct(j,i)%xu= xi-dx/2. ! x coordinate to strct
+                strct(j,i)%yp= yi       ! y coordinate to strct
+                strct(j,i)%yv= yi-dy/2. ! y coordinate to strct
+                !strct(i,j)%phi = 0.     ! phi value initialized guess
+                !strct(i,j)%phi_new = 0. ! phi value initialized guess for next iteration
+                n=n+1                   ! count cell numbers up one
+            END DO
+        END DO
+    END SUBROUTINE set_xy
+    SUBROUTINe set_xy2 (strct,dx,dy,nx,ny)
+        real,intent(in)     ::  dx,dy
+        integer,intent(in)  ::  nx,ny   ! size of strct in x and y directions 
+        type(dat),dimension(0:,0:),intent(inout)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
+        integer ::  i,j,n   ! for do loops and n is counter for cell number
+        real    ::  xi,yi   ! x and y values for each cell
+        ! left boundary
+        strct(0,:)%xp= 0.
+        strct(0,0)%yp= 0.
+        strct(0,1:ny-1)%yp= reshape((/ (i*dy - dy/2. ,i=1,ny-1) /),(/ ny-1/))
+        strct(0,ny+0)%yp= 1.
+        ! bottom boundary
+        strct(0,0)%xp= 0.
+        strct(1:nx-1,0)%xp= reshape((/ (i*dx - dx/2. ,i=1,nx-1) /),(/ nx-1/))
+        strct(nx+0,0)%xp= 10.
+        strct(:,0)%yp= 0.
+        ! right boundary
+        strct(nx+0,:)%xp= 10.
+        strct(nx+0,:)%yp= strct(0,:)%yp
+        ! top boundary
+        strct(:,ny+0)%xp= strct(:,0)%xp
+        strct(:,ny+0)%yp= 1.
+        ! set xu and yv to similar values
+        !top
+        strct(:,ny)%xu=strct(:,ny)%xp-dx/2.
+        strct(:,ny)%yv=strct(:,ny)%yp-dy/2.
+        !bottom
+        strct(:,0)%xu=strct(:,0)%xp-dx/2.
+        strct(:,0)%yv=strct(:,0)%yp-dy/2.
+        !left
+        strct(0:1,:)%xu=0.
+        strct(0:1,:)%yv=0.
+        !right
+        strct(nx,:)%xu=10.
+        strct(nx,:)%yv=10.
         n=1                     ! cell number 1
         DO i=1,ny-1             ! 1 to ny-2 for boundary nodes (we only are iterating through the middle values)
             yi = i*dy - dy/2.   ! y coordinate
