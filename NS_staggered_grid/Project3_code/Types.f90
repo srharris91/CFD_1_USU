@@ -2,13 +2,14 @@ MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
     ! Properties of fluid flow
-    REAL    ::  Omega = 0.6 ! Relaxation factor
-    REAL    ::  OmegaP= 1.4 ! Relaxation factor for pressure correction
-    REAL    ::  alpha = 0.4 ! relaxation factor for pressure correction
+    REAL    ::  Omega = 0.2 ! Relaxation factor
+    REAL    ::  OmegaP= 1.8 ! Relaxation factor for pressure correction
+    REAL    ::  alpha = 0.2 ! relaxation factor for pressure correction
     REAL    ::  mu = 0.01   ! dynamic viscosity
     REAL    ::  rho= 1.     ! density
-    REAL    ::  Convergence = 1.e-34
-    REAL    ::  Convergence2= 1.e-14
+    REAL    ::  Convergence = 1.e-14
+    REAL    ::  Convergence2= 1.e-8
+    INTEGER ::  max_iter = 1000000
     TYPE::dat
         REAL::xu,yv,xp,yp
         REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
@@ -18,8 +19,8 @@ MODULE types
         INTEGER::n
     END TYPE dat
 CONTAINS
-    SUBROUTINe set_xy (strct,dx,dy,nx,ny)
-        real,intent(in)     ::  dx,dy
+    SUBROUTINE set_xy (strct,dx,dy,nx,ny,x,y)
+        real,intent(in)     ::  dx,dy,x,y
         integer,intent(in)  ::  nx,ny   ! size of strct in x and y directions 
         type(dat),dimension(0:,0:),intent(inout)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
         integer ::  i,j,n   ! for do loops and n is counter for cell number
@@ -28,31 +29,19 @@ CONTAINS
         strct(0,:)%xp= 0.
         strct(0,0)%yp= 0.
         strct(0,1:ny-1)%yp= reshape((/ (i*dy - dy/2. ,i=1,ny-1) /),(/ ny-1/))
-        strct(0,ny+0)%yp= 1.
+        strct(0,ny+0)%yp= y
         ! bottom boundary
         strct(0,0)%xp= 0.
         strct(1:nx-1,0)%xp= reshape((/ (i*dx - dx/2. ,i=1,nx-1) /),(/ nx-1/))
-        strct(nx+0,0)%xp= 1.
+        strct(nx+0,0)%xp= x
         strct(:,0)%yp= 0.
         ! right boundary
-        strct(nx+0,:)%xp= 1.
+        strct(nx+0,:)%xp= x
         strct(nx+0,:)%yp= strct(0,:)%yp
         ! top boundary
         strct(:,ny+0)%xp= strct(:,0)%xp
-        strct(:,ny+0)%yp= 1.
-        ! set xu and yv to similar values
-        !top
-        strct(:,ny)%xu=strct(:,ny)%xp-dx/2.
-        strct(:,ny)%yv=strct(:,ny)%yp-dy/2.
-        !bottom
-        strct(:,0)%xu=strct(:,0)%xp-dx/2.
-        strct(:,0)%yv=strct(:,0)%yp-dy/2.
-        !left
-        strct(0:1,:)%xu=0.
-        strct(0:1,:)%yv=0.
-        !right
-        strct(nx,:)%xu=1.
-        strct(nx,:)%yv=1.
+        strct(:,ny+0)%yp= y
+
         n=1                     ! cell number 1
         DO i=1,ny-1             ! 1 to ny-2 for boundary nodes (we only are iterating through the middle values)
             yi = i*dy - dy/2.   ! y coordinate
@@ -60,65 +49,21 @@ CONTAINS
                 xi = j*dx - dx/2.       ! x coordinate
                 strct(j,i)%n = n        ! input n node
                 strct(j,i)%xp= xi       ! x coordinate to strct
-                strct(j,i)%xu= xi-dx/2. ! x coordinate to strct
                 strct(j,i)%yp= yi       ! y coordinate to strct
-                strct(j,i)%yv= yi-dy/2. ! y coordinate to strct
-                !strct(i,j)%phi = 0.     ! phi value initialized guess
-                !strct(i,j)%phi_new = 0. ! phi value initialized guess for next iteration
                 n=n+1                   ! count cell numbers up one
             END DO
         END DO
-    END SUBROUTINE set_xy
-    SUBROUTINe set_xy2 (strct,dx,dy,nx,ny)
-        real,intent(in)     ::  dx,dy
-        integer,intent(in)  ::  nx,ny   ! size of strct in x and y directions 
-        type(dat),dimension(0:,0:),intent(inout)::strct ! data contained from 0:nx-1 where cells 0 and nx-1 are boundary nodes (cell volume approaches 0 on boundary nodes)
-        integer ::  i,j,n   ! for do loops and n is counter for cell number
-        real    ::  xi,yi   ! x and y values for each cell
-        ! left boundary
-        strct(0,:)%xp= 0.
-        strct(0,0)%yp= 0.
-        strct(0,1:ny-1)%yp= reshape((/ (i*dy - dy/2. ,i=1,ny-1) /),(/ ny-1/))
-        strct(0,ny+0)%yp= 1.
-        ! bottom boundary
-        strct(0,0)%xp= 0.
-        strct(1:nx-1,0)%xp= reshape((/ (i*dx - dx/2. ,i=1,nx-1) /),(/ nx-1/))
-        strct(nx+0,0)%xp= 10.
-        strct(:,0)%yp= 0.
-        ! right boundary
-        strct(nx+0,:)%xp= 10.
-        strct(nx+0,:)%yp= strct(0,:)%yp
-        ! top boundary
-        strct(:,ny+0)%xp= strct(:,0)%xp
-        strct(:,ny+0)%yp= 1.
-        ! set xu and yv to similar values
+        ! set xu and yv to similar values (but for the staggard grids of each)
+        strct%xu = strct%xp - dx/2.
+        strct%yv = strct%yp - dy/2.
         !top
-        strct(:,ny)%xu=strct(:,ny)%xp-dx/2.
-        strct(:,ny)%yv=strct(:,ny)%yp-dy/2.
+        strct(:,ny)%yv=y
         !bottom
-        strct(:,0)%xu=strct(:,0)%xp-dx/2.
-        strct(:,0)%yv=strct(:,0)%yp-dy/2.
+        strct(:,0)%yv=0.
         !left
         strct(0:1,:)%xu=0.
-        strct(0:1,:)%yv=0.
         !right
-        strct(nx,:)%xu=10.
-        strct(nx,:)%yv=10.
-        n=1                     ! cell number 1
-        DO i=1,ny-1             ! 1 to ny-2 for boundary nodes (we only are iterating through the middle values)
-            yi = i*dy - dy/2.   ! y coordinate
-            DO j=1,nx-1
-                xi = j*dx - dx/2.       ! x coordinate
-                strct(j,i)%n = n        ! input n node
-                strct(j,i)%xp= xi       ! x coordinate to strct
-                strct(j,i)%xu= xi-dx/2. ! x coordinate to strct
-                strct(j,i)%yp= yi       ! y coordinate to strct
-                strct(j,i)%yv= yi-dy/2. ! y coordinate to strct
-                !strct(i,j)%phi = 0.     ! phi value initialized guess
-                !strct(i,j)%phi_new = 0. ! phi value initialized guess for next iteration
-                n=n+1                   ! count cell numbers up one
-            END DO
-        END DO
+        strct(nx,:)%xu=x
     END SUBROUTINE set_xy
 
     SUBROUTINE mom_uv(strct,dx,dy,nx,ny)
@@ -131,6 +76,7 @@ CONTAINS
         REAL    ::  error=1.,error2=1.
 
         ! mdot and Au values
+        !$OMP PARALLEL DO
         DO i=1,nx
             DO j=1,ny
                 mdot                =   rho*(strct(i+1,j  )%u_old+strct(i  ,j  )%u_old)/2.*dy ! east face
@@ -156,8 +102,10 @@ CONTAINS
                 strct(i,j)%APu      = strct(i,j)%APu/Omega
             END DO
         END DO
+        !$OMP END PARALLEL DO
 
         ! mdot and Av values
+        !$OMP PARALLEL DO
         DO i=1,nx
             DO j=1,ny
                 mdot                =   rho*(strct(i+1,j-1)%u_old+strct(i+1,j  )%u_old)/2.*dy ! east face
@@ -183,10 +131,11 @@ CONTAINS
                 strct(i,j)%APv      = strct(i,j)%APv/Omega
             END DO
         END DO
+        !$OMP END PARALLEL DO
 
         ! solve u-momentum
         error2 = 1.
-        DO iter=1,100000
+        DO iter=1,max_iter
             error2=error
             error = 0.
             DO i=2,nx
@@ -206,6 +155,7 @@ CONTAINS
                     error = error + (strct(i,j)%u - strct(i,j)%u_old)**2
                 END DO
             END DO
+            !strct(nx+1,:)%u=strct(nx,:)%u
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
@@ -213,7 +163,7 @@ CONTAINS
 
         ! solve v-momentum
         error2 = 1.
-        DO iter=1,100000
+        DO iter=1,max_iter
             error2=error
             error = 0.
             DO i=1,nx
@@ -248,44 +198,52 @@ CONTAINS
         REAL    :: error,error2
         REAL    ::  S_sum
 
-            DO i=1,nx
-                DO j=1,ny
-                    IF (i==nx) THEN
-                        strct(i,j)%AEp      =   0.
-                    ELSE 
-                        strct(i,j)%AEp      =   rho*dy*dy/strct(i+1,j)%APu
-                    END IF
-                    IF (j==ny) THEN
-                        strct(i,j)%ANp      =   0.
-                    ELSE
-                        strct(i,j)%ANp      =   rho*dx*dx/strct(i,j+1)%APv
-                    END IF
-                    IF (i==1) THEN
-                        strct(i,j)%AWp      =   0.
-                    ELSE
-                        strct(i,j)%AWp      =   rho*dy*dy/strct(i,j)%APu
-                    END IF
-                    IF (j==1) THEN
-                        strct(i,j)%ASp      =   0.
-                    ELSE
-                        strct(i,j)%ASp      =   rho*dx*dx/strct(i,j)%APv
-                    END IF
-                    strct(i,j)%APp          =   strct(i,j)%AEp + &
-                        strct(i,j)%ANp + &
-                        strct(i,j)%AWp + &
-                        strct(i,j)%ASp
-                END DO
+        !$OMP PARALLEL DO
+        DO i=1,nx
+            DO j=1,ny
+                IF (i==nx) THEN
+                    strct(i,j)%AEp      =   0.
+                ELSE 
+                    strct(i,j)%AEp      =   rho*dy*dy/strct(i+1,j)%APu
+                END IF
+                IF (j==ny) THEN
+                    strct(i,j)%ANp      =   0.
+                ELSE
+                    strct(i,j)%ANp      =   rho*dx*dx/strct(i,j+1)%APv
+                END IF
+                IF (i==1) THEN
+                    strct(i,j)%AWp      =   0.
+                ELSE
+                    strct(i,j)%AWp      =   rho*dy*dy/strct(i,j)%APu
+                END IF
+                IF (j==1) THEN
+                    strct(i,j)%ASp      =   0.
+                ELSE
+                    strct(i,j)%ASp      =   rho*dx*dx/strct(i,j)%APv
+                END IF
+                strct(i,j)%APp          =   strct(i,j)%AEp + &
+                    strct(i,j)%ANp + &
+                    strct(i,j)%AWp + &
+                    strct(i,j)%ASp
             END DO
+        END DO
+        !$OMP END PARALLEL DO
 
-        DO iter=1,100000
+        DO iter=1,max_iter
             error2=error
             error=0.
             S_sum = 0.
+            !$OMP PARALLEL DO
             DO i=1,nx
                 DO j=1,ny
                     strct(i,j)%S = &     ! source terms
-                          (rho*strct(i+1,j  )%u_old-rho*strct(i,j)%u_old)*dy&
+                        (rho*strct(i+1,j  )%u_old-rho*strct(i,j)%u_old)*dy&
                         + (rho*strct(i  ,j+1)%v_old-rho*strct(i,j)%v_old)*dx
+                END DO
+            END DO
+            !$OMP END PARALLEL DO
+            DO i=1,nx
+                DO j=1,ny
                     strct(i,j)%Pp = strct(i,j)%Pp + (OmegaP/strct(i,j)%APp)&
                         *(&
                         + strct(i,j)%AEp*strct(i+1,j  )%Pp&
@@ -295,8 +253,19 @@ CONTAINS
                         - strct(i,j)%S                       &
                         - strct(i,j)%APp*strct(i  ,j  )%Pp&
                         )
-
+                END DO
+            END DO
+            !strct(nx+1,:)%Pp=strct(nx,:)%Pp
+            !$OMP PARALLEL DO
+            DO i=1,nx
+                DO j=1,ny
                     strct(i,j)%P=strct(i,j)%P_old+alpha*strct(i,j)%Pp
+                END DO
+            END DO
+            !strct(nx+1,:)%P=strct(nx,:)%P
+            !$OMP END PARALLEL DO
+            DO i=1,nx
+                DO j=1,ny
                     error = error + (strct(i,j)%P - strct(i,j)%P_old)**2
                     S_sum = S_sum + strct(i,j)%S**2
                     IF (ISNAN(strct(i,j)%Pp)) THEN
@@ -306,22 +275,26 @@ CONTAINS
                 END DO
             END DO
             IF (abs(error - error2)<Convergence) THEN   ! error stops changing convergence
-            !IF (abs(S_sum)<Convergence) THEN
+            !IF (abs(S_sum)<Convergence) THEN   ! error stops changing convergence
                 strct%P_old = strct%P
                 EXIT
             END IF
         END DO
-        WRITE(*,*) iter,S_sum ! output iterations along with RSS of source term
+        WRITE(*,*) iter,S_sum,error ! output iterations along with RSS of source term
+        !$OMP PARALLEL DO
         DO i=2,nx
             DO j=1,ny
                 strct(i,j)%u=strct(i,j)%u + (strct(i-1,j  )%Pp - strct(i  ,j  )%Pp) *dy/strct(i,j)%APu
             END DO
         END DO
+        !$OMP END PARALLEL DO
+        !$OMP PARALLEL DO
         DO i=1,nx
             DO j=2,ny
                 strct(i,j)%v=strct(i,j)%v + (strct(i  ,j-1)%Pp - strct(i  ,j  )%Pp) *dx/strct(i,j)%APv
             END DO
         END DO
+        !$OMP END PARALLEL DO
 
     END SUBROUTINE vel_correction
     SUBROUTINE Solve_NS(strct,dx,dy,nx,ny)
@@ -329,49 +302,52 @@ CONTAINS
         REAL,INTENT(IN)     ::  dx,dy
         INTEGER,INTENT(IN)  ::  nx,ny! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
-        REAL    ::  mdot ! temporary value for mass flow values
         INTEGER ::  i,j,iter=0!loop iterators
         REAL    ::  error2=1.,error_RSS=0.
 
-    DO iter=0,20000
-        ! step 1 solve discretised momentum equations
-        CALL mom_uv(strct,dx,dy,nx,ny)
+        open(unit=8,file="output/iter.txt")
+        108 FORMAT(2ES16.7)
+        WRITE(8,108) 0.1,1.
+        DO iter=1,20000
+            ! step 1 solve discretised momentum equations
+            CALL mom_uv(strct,dx,dy,nx,ny)
 
-!WRITE(*,100) ( data(:,i)%u ,i=0,max_yp )
-        ! step 2 Solve pressure correction equation
-        ! step 3 Correct pressure and velocities
-        CALL vel_correction(strct,dx,dy,nx,ny)
+            ! step 2 Solve pressure correction equation
+            ! step 3 Correct pressure and velocities
+            CALL vel_correction(strct,dx,dy,nx,ny)
 
 
-        ! step 4 Solve all other discretised transport equations
+            ! step 4 Solve all other discretised transport equations
 
-        ! if no convergence, then iterate
-        error2 = error_RSS
-        error_RSS = 0.
-        DO i=1,nx
-            DO j=1,ny
-                error_RSS = error_RSS + (strct(i,j)%u-strct(i,j)%u_old)**2
-                error_RSS = error_RSS + (strct(i,j)%v-strct(i,j)%v_old)**2
-                error_RSS = error_RSS + (strct(i,j)%P-strct(i,j)%P_old)**2
+            ! if no convergence, then iterate
+            error2 = error_RSS
+            error_RSS = 0.
+            DO i=1,nx
+                DO j=1,ny
+                    error_RSS = error_RSS + (strct(i,j)%u-strct(i,j)%u_old)**2
+                    error_RSS = error_RSS + (strct(i,j)%v-strct(i,j)%v_old)**2
+                    error_RSS = error_RSS + (strct(i,j)%P-strct(i,j)%P_old)**2
+                END DO
             END DO
+            error_RSS = sqrt(error_RSS)
+            ! reset values
+            strct%u_old  = strct%u
+            strct%v_old  = strct%v
+            strct%P_old  = strct%P
+            !WRITE(*,*) "error = ",error_RSS
+
+
+            ! if converged then stop
+            WRITE(8,108) REAL(iter),abs(error_RSS-error2)
+            IF (abs(error_RSS-error2) <= Convergence2) THEN
+                WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
+                !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
+                EXIT
+            ELSE
+                WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
+            END IF
         END DO
-        error_RSS = sqrt(error_RSS)
-        ! reset values
-        strct%u_old  = strct%u
-        strct%v_old  = strct%v
-        strct%P_old  = strct%P
-        !WRITE(*,*) "error = ",error_RSS
-
-
-        ! if converged then stop
-        IF (abs(error_RSS-error2) <= Convergence2) THEN
-            WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
-            !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
-            EXIT
-        ELSE
-            WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
-        END IF
-    END DO
+        close(8)
 
 
 

@@ -3,6 +3,7 @@ code = Project3
 compiler = gfortran
 # flags=-Wall -Wextra -Wconversion -std=c++11 -O3 -o
 # flags=-cpp -Wall -Wextra -Wconversion -J./output/ -fopenmp -O3 -fdefault-real-8 -o
+# flags=-cpp -Wall -Wextra -Wconversion -J./output/ -O3 -fopenmp -fdefault-real-8
 flags=-cpp -Wall -Wextra -Wconversion -J./output/ -O3 -fdefault-real-8
 output = output/
 EXEC = Project3.exec
@@ -14,9 +15,6 @@ dir:
 	@echo ''
 	@mkdir -p output
 	@echo ''
-compile:
-	$(compiler) $(module) $(code).f90 $(flags) -o $(output)$(code).exec
-# 	$(compiler) $(code).cpp $(flags) $(code).exec
 exec: $(OBJS)
 	@echo ''
 	@echo 'Linking $(output)$(EXEC) from $(OBJS)'
@@ -38,5 +36,5 @@ clean:
 .SUFFIXES:
 .SUFFIXES: .f90 .o
 .f90.o:
-	@echo 'Compiling [$@] from [$<] using $(comp) $(flags)'
+	@echo 'Compiling [$@] from [$<] using $(compiler) $(flags)'
 	@$(compiler) $(flags) $*.f90 -c -o $*.o
