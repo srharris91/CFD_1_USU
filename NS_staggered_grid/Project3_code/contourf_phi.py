@@ -73,7 +73,7 @@ plt.colorbar(im)
 
 ax1=fig.add_subplot(614,aspect='equal')
 #ax1.contourf(x,y,p,20,cmap=plt.cm.gray,origin='lower')
-Q=ax1.quiver(x[::3,::3],y[::3,::3],u[::3,::3],v[::3,::3],pivot='mid',color='r',units='width',scale=1 / 0.13)
+Q=ax1.quiver(x[::1,::1],y[::1,::1],u[::1,::1],v[::1,::1],pivot='mid',color='r',units='width',scale=1 / 0.13)
 ax1.quiverkey(Q,0.85,1.02,1,r'$1 \frac{m}{s}$',fontproperties={'weight':'bold'})
 ax1.plot(x[::1,::1],y[::1,::1],'k.',ms=1)
 ax1.set_xlabel(r'$x$')

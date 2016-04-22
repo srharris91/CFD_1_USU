@@ -1,15 +1,15 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x  10
+#define max_x  50
 #define max_y  10
 ! x and y number of cells plus 1
-#define max_xp  11
+#define max_xp  51
 #define max_yp  11
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p  12
+#define max_x2p  52
 #define max_y2p  12
 ! length of x and y
-#define len_x 1.
+#define len_x 10.
 #define len_y 1.
 
 
@@ -31,9 +31,9 @@ PROGRAM project3
     CALL set_xy(data,dx,dy,max_xp,max_yp,len_x,len_y)
     !! initialize BC's
     ! BC's
-    Lu = 0.
+    Lu = 1.
     Ru = 0.
-    Tu = 1.
+    Tu = 0.
     Bu = 0.
     data%u          = 0.  ! initialize all data
     ! left Boundary
@@ -53,9 +53,9 @@ PROGRAM project3
     data%v     = 0.
 
     ! initialize P values
-    data%Pp=0.001
-    data%P_old=0.00000001
-    data%P    =0.00000001
+    data%Pp=0.
+    data%P_old=0.
+    data%P    =0.
 
     ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
     ! solving using the deferred correction method

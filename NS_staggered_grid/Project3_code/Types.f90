@@ -8,8 +8,9 @@ MODULE types
     REAL    ::  mu = 0.01   ! dynamic viscosity
     REAL    ::  rho= 1.     ! density
     REAL    ::  Convergence = 1.e-14
-    REAL    ::  Convergence2= 1.e-8
+    REAL    ::  Convergence2= 1.e-9
     INTEGER ::  max_iter = 1000000
+    INTEGER ::  max_iter2= 700
     TYPE::dat
         REAL::xu,yv,xp,yp
         REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
@@ -155,12 +156,11 @@ CONTAINS
                     error = error + (strct(i,j)%u - strct(i,j)%u_old)**2
                 END DO
             END DO
-            !strct(nx+1,:)%u=strct(nx,:)%u
+            strct(nx+1,:)%u=strct(nx,:)%u
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
-        !strct(nx+1,:)%u=((strct(1,:)%AWu-mu*dy/dx)/(strct(nx,:)%AWu-mu*dy*dx))*strct(nx+1,:)%u
-        WRITE(*,*) iter
+        WRITE(*,*) iter,abs(error-error2)
 
         ! solve v-momentum
         error2 = 1.
@@ -186,7 +186,7 @@ CONTAINS
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
-        WRITE(*,*) iter
+        WRITE(*,*) iter,abs(error-error2)
     END SUBROUTINE mom_uv
 
 
@@ -230,7 +230,9 @@ CONTAINS
         END DO
         !$OMP END PARALLEL DO
 
-        DO iter=1,max_iter
+        error =1.
+        error2=1.
+        DO iter=1,max_iter2
             error2=error
             error=0.
             S_sum = 0.
@@ -256,14 +258,12 @@ CONTAINS
                         )
                 END DO
             END DO
-            !strct(nx+1,:)%Pp=strct(nx,:)%Pp
             !$OMP PARALLEL DO
             DO i=1,nx
                 DO j=1,ny
                     strct(i,j)%P=strct(i,j)%P_old+alpha*strct(i,j)%Pp
                 END DO
             END DO
-            !strct(nx+1,:)%P=strct(nx,:)%P
             !$OMP END PARALLEL DO
             DO i=1,nx
                 DO j=1,ny
@@ -281,7 +281,7 @@ CONTAINS
                 EXIT
             END IF
         END DO
-        WRITE(*,*) iter,S_sum,error ! output iterations along with RSS of source term
+        WRITE(*,*) iter,S_sum,abs(error-error2) ! output iterations along with RSS of source term
         !$OMP PARALLEL DO
         DO i=2,nx
             DO j=1,ny
@@ -309,7 +309,7 @@ CONTAINS
         open(unit=8,file="output/iter.txt")
         108 FORMAT(2ES16.7)
         WRITE(8,108) 0.1,1.
-        DO iter=1,20000
+        DO iter=1,max_iter2
             ! step 1 solve discretised momentum equations
             CALL mom_uv(strct,dx,dy,nx,ny)
 
