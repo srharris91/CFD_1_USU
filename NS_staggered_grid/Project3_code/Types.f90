@@ -10,7 +10,7 @@ MODULE types
     REAL    ::  Convergence = 1.e-14
     REAL    ::  Convergence2= 1.e-9
     INTEGER ::  max_iter = 1000000
-    INTEGER ::  max_iter2= 700
+    INTEGER ::  max_iter2= 7000
     TYPE::dat
         REAL::xu,yv,xp,yp
         REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
