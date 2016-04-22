@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x  100
-#define max_y  100
+#define max_x  10
+#define max_y  10
 ! x and y number of cells plus 1
-#define max_xp  101
-#define max_yp  101
+#define max_xp  11
+#define max_yp  11
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p  102
-#define max_y2p  102
+#define max_x2p  12
+#define max_y2p  12
 ! length of x and y
 #define len_x 1.
 #define len_y 1.

@@ -2,9 +2,9 @@ MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
     ! Properties of fluid flow
-    REAL    ::  Omega = 0.2 ! Relaxation factor
-    REAL    ::  OmegaP= 1.8 ! Relaxation factor for pressure correction
-    REAL    ::  alpha = 0.2 ! relaxation factor for pressure correction
+    REAL    ::  Omega = 0.6 ! Relaxation factor
+    REAL    ::  OmegaP= 1.7 ! Relaxation factor for pressure correction
+    REAL    ::  alpha = 0.3 ! relaxation factor for pressure correction
     REAL    ::  mu = 0.01   ! dynamic viscosity
     REAL    ::  rho= 1.     ! density
     REAL    ::  Convergence = 1.e-14
@@ -159,6 +159,7 @@ CONTAINS
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
+        !strct(nx+1,:)%u=((strct(1,:)%AWu-mu*dy/dx)/(strct(nx,:)%AWu-mu*dy*dx))*strct(nx+1,:)%u
         WRITE(*,*) iter
 
         ! solve v-momentum
@@ -237,8 +238,8 @@ CONTAINS
             DO i=1,nx
                 DO j=1,ny
                     strct(i,j)%S = &     ! source terms
-                        (rho*strct(i+1,j  )%u_old-rho*strct(i,j)%u_old)*dy&
-                        + (rho*strct(i  ,j+1)%v_old-rho*strct(i,j)%v_old)*dx
+                        (rho*strct(i+1,j  )%u-rho*strct(i,j)%u)*dy&
+                        + (rho*strct(i  ,j+1)%v-rho*strct(i,j)%v)*dx
                 END DO
             END DO
             !$OMP END PARALLEL DO
@@ -276,7 +277,7 @@ CONTAINS
             END DO
             IF (abs(error - error2)<Convergence) THEN   ! error stops changing convergence
             !IF (abs(S_sum)<Convergence) THEN   ! error stops changing convergence
-                strct%P_old = strct%P
+                !strct%P_old = strct%P
                 EXIT
             END IF
         END DO
