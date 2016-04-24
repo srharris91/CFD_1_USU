@@ -73,8 +73,11 @@ PROGRAM project3
     open(unit=14,file="output/v.txt")
     open(unit=15,file="output/P.txt")
     open(unit=16,file="output/u_spot.txt")
+    open(unit=17,file="output/tau_upper.txt")
+    open(unit=18,file="output/tau_lower.txt")
     100 FORMAT (max_x2p ES16.7)
     101 FORMAT (2ES16.7)
+    102 FORMAT (max_xp ES16.7)
     WRITE( 9,100) ( data(:,i)%xp,i=0,max_yp )
     WRITE(10,100) ( data(:,i)%yp,i=0,max_yp )
     WRITE(11,100) ( data(:,i)%xu,i=0,max_yp )
@@ -83,11 +86,14 @@ PROGRAM project3
     WRITE(14,100) ( data(:,i)%v ,i=0,max_yp )
     WRITE(15,100) ( data(:,i)%P ,i=0,max_yp )
     DO i=0,max_xp
-        IF (data(i,1)%xu <= 0.50001 .AND. data(i,1)%xu>=0.49999) THEN
+        !IF (data(i,1)%xu <= 0.51 .AND. data(i,1)%xu>=0.49) THEN
+        IF (data(i,1)%xu <= 0.41 .AND. data(i,1)%xu>=0.39) THEN
             DO j=0,max_yp
                 WRITE(16,101) data(i,j)%u,data(i,j)%yp
             END DO
         END IF
     END DO
-    close(9);close(10);close(11);close(12);close(13);close(14);close(15);close(16)
+    WRITE(17,102) ( mu*(data(i,max_y)%u-data(i,max_yp)%u)/dy ,i=0,max_x )
+    WRITE(18,102) ( mu*(data(i,1    )%u-data(i,0     )%u)/dy ,i=0,max_x )
+    close(9);close(10);close(11);close(12);close(13);close(14);close(15);close(16);close(17);close(18)
 END PROGRAM project3
