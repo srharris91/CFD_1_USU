@@ -1,7 +1,9 @@
-\contentsline {section}{\numberline {1}INTRODUCTION}{2}
-\contentsline {section}{\numberline {2}NUMERICAL METHOD}{2}
-\contentsline {section}{\numberline {3}RESULTS}{2}
-\contentsline {section}{\numberline {4}CONCLUSION}{2}
-\contentsline {section}{\numberline {A}Code}{3}
-\contentsline {subsection}{\numberline {A.1}Subroutines}{3}
-\contentsline {subsection}{\numberline {A.2}Main program}{7}
+\contentsline {section}{\numberline {1}INTRODUCTION}{3}{section.1}
+\contentsline {section}{\numberline {2}NUMERICAL METHOD}{3}{section.2}
+\contentsline {section}{\numberline {3}RESULTS}{5}{section.3}
+\contentsline {subsection}{\numberline {3.1}Driven Cavity}{5}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Channel Flow}{8}{subsection.3.2}
+\contentsline {section}{\numberline {4}CONCLUSION}{9}{section.4}
+\contentsline {section}{\numberline {A}Code}{9}{appendix.A}
+\contentsline {subsection}{\numberline {A.1}Subroutines}{9}{subsection.A.1}
+\contentsline {subsection}{\numberline {A.2}Main program}{14}{subsection.A.2}

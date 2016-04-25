@@ -12,8 +12,6 @@
 #define len_x 1.
 #define len_y 1.
 
-
-
 PROGRAM project3
     USE types !use module defined by types
     IMPLICIT NONE
@@ -23,12 +21,13 @@ PROGRAM project3
     REAL    ::  Lu,Ru,Tu,Bu ! boundary condition u velocity values
     TYPE(dat),DIMENSION(0:max_xp,0:max_yp)::data ! 22 if you count edges (thin cell)
     REAL    ::  TIME1,TIME2  ! for time of computation
-    ! part 1
+
     ! set dx and dy and gamma and coefficients (without dividing by delta x between node centers)
     dx=len_x/REAL(max_x)
     dy=len_y/REAL(max_y)
     ! initialize data and x,y for middle values
     CALL set_xy(data,dx,dy,max_xp,max_yp,len_x,len_y)
+
     !! initialize BC's
     ! BC's
     Lu = 0.
@@ -45,25 +44,23 @@ PROGRAM project3
     data(max_xp,:)%u= Ru
     ! top boundary
     data(:,max_yp)%u= Tu
+
     ! initialize u
     data%u_old  = data%u
-
-
     ! initialize v
     data%v_old = 0.
     data%v     = 0.
-
     ! initialize P values
     data%Pp=0.
     data%P_old=0.
     data%P    =0.
 
-    ! point SOR method to solve for the exact values of phi using the BC (only loop through inner values)
-    ! solving using the deferred correction method
+    ! solving Navier-Stokes 2-D using the staggered grid method
     CALL CPU_TIME(TIME1)
     CALL Solve_NS(data,dx,dy,max_x,max_y)
     CALL CPU_TIME(TIME2)
     WRITE(*,*) "CPU Time = ",TIME2-TIME1
+
     !output
     ! user will need to specify size of 
     open(unit= 9,file="output/x.txt")

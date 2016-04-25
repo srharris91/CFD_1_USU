@@ -58,14 +58,10 @@ CONTAINS
         ! set xu and yv to similar values (but for the staggard grids of each)
         strct%xu = strct%xp - dx/2.
         strct%yv = strct%yp - dy/2.
-        !top
-        strct(:,ny)%yv=y
-        !bottom
-        strct(:,0)%yv=0.
-        !left
-        strct(0:1,:)%xu=0.
-        !right
-        strct(nx,:)%xu=x
+        strct(:,ny)%yv=y    !top
+        strct(:,0)%yv=0.    !bottom
+        strct(0:1,:)%xu=0.  !left
+        strct(nx,:)%xu=x    !right
     END SUBROUTINE set_xy
 
     SUBROUTINE mom_uv(strct,dx,dy,nx,ny)
@@ -191,7 +187,6 @@ CONTAINS
         WRITE(*,*) iter,abs(error-error2)
     END SUBROUTINE mom_uv
 
-
     SUBROUTINE vel_correction(strct,dx,dy,nx,ny)
         ! requires uniform grid of dx and dy spacing
         REAL,INTENT(IN)     ::  dx,dy
@@ -200,7 +195,6 @@ CONTAINS
         INTEGER ::  i,j,iter=0 !loop iterators
         REAL    :: error,error2
         REAL    ::  S_sum
-
         !$OMP PARALLEL DO
         DO i=1,nx
             DO j=1,ny
@@ -231,7 +225,6 @@ CONTAINS
             END DO
         END DO
         !$OMP END PARALLEL DO
-
         error =1.
         error2=1.
         DO iter=1,max_iter2
@@ -278,8 +271,6 @@ CONTAINS
                 END DO
             END DO
             IF (abs(error - error2)<Convergence) THEN   ! error stops changing convergence
-            !IF (abs(S_sum)<Convergence) THEN   ! error stops changing convergence
-                !strct%P_old = strct%P
                 EXIT
             END IF
         END DO
@@ -298,10 +289,9 @@ CONTAINS
             END DO
         END DO
         !$OMP END PARALLEL DO
-
     END SUBROUTINE vel_correction
+
     SUBROUTINE Solve_NS(strct,dx,dy,nx,ny)
-        ! requires uniform grid of dx and dy spacing
         REAL,INTENT(IN)     ::  dx,dy
         INTEGER,INTENT(IN)  ::  nx,ny! size of strct in x and y directions 
         TYPE(dat),DIMENSION(0:nx+1,0:ny+1),INTENT(INOUT)::strct ! data contained from 0:nx+1 where cells 0 and nx+1 are boundary nodes (cell volume approaches 0 on boundary nodes)
@@ -319,8 +309,8 @@ CONTAINS
             ! step 3 Correct pressure and velocities
             CALL vel_correction(strct,dx,dy,nx,ny)
 
-
             ! step 4 Solve all other discretised transport equations
+            ! not implemented
 
             ! if no convergence, then iterate
             error2 = error_RSS
@@ -333,29 +323,21 @@ CONTAINS
                 END DO
             END DO
             error_RSS = sqrt(error_RSS)
+            
             ! reset values
             strct%u_old  = strct%u
             strct%v_old  = strct%v
             strct%P_old  = strct%P
-            !WRITE(*,*) "error = ",error_RSS
-
 
             ! if converged then stop
             WRITE(8,108) REAL(iter),abs(error_RSS-error2)
             IF (abs(error_RSS-error2) <= Convergence2) THEN
                 WRITE(*,*) "converged on iteration and error big loop = ",iter,abs(error_RSS-error2)
-                !WRITE(*,100) ( data(:,i)%S,i=0,max_yp )
                 EXIT
             ELSE
                 WRITE(*,*) "iteration and error big loop = ",iter,abs(error_RSS-error2)
             END IF
         END DO
         close(8)
-
-
-
     END SUBROUTINE Solve_NS
-
-
-
 END MODULE types
