@@ -2,15 +2,15 @@ MODULE types
     !purpose: define data type struct
     IMPLICIT NONE
     ! Properties of fluid flow
-    REAL    ::  Omega = 0.6 ! Relaxation factor
-    REAL    ::  OmegaP= 1.7 ! Relaxation factor for pressure correction
+    REAL    ::  Omega = 0.6 ! Relaxation factor for momentum non-linear
+    REAL    ::  OmegaP= 1.7 ! Relaxation factor for pressure correction linear
     REAL    ::  alpha = 0.3 ! relaxation factor for pressure correction
     REAL    ::  mu = 0.01   ! dynamic viscosity
     REAL    ::  rho= 1.     ! density
     REAL    ::  Convergence = 1.e-14
     REAL    ::  Convergence2= 1.e-9
     INTEGER ::  max_iter = 1000000
-    INTEGER ::  max_iter2= 7000
+    INTEGER ::  max_iter2= 700
     TYPE::dat
         REAL::xu,yv,xp,yp
         REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
@@ -160,6 +160,7 @@ CONTAINS
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
+        WRITE(*,*) sum(rho*dy*strct(0,:)%u)/sum(rho*dy*strct(nx+1,:)%u),iter
         WRITE(*,*) iter,abs(error-error2)
 
         ! solve v-momentum

@@ -1,13 +1,13 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x  50
-#define max_y  10
+#define max_x  100
+#define max_y  21
 ! x and y number of cells plus 1
-#define max_xp  51
-#define max_yp  11
+#define max_xp  101
+#define max_yp  22
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p  52
-#define max_y2p  12
+#define max_x2p  102
+#define max_y2p  23
 ! length of x and y
 #define len_x 10.
 #define len_y 1.
@@ -38,6 +38,7 @@ PROGRAM project3
     data%u          = 0.  ! initialize all data
     ! left Boundary
     data(1,:)%u     = Lu
+    data(0,:)%u     = Lu
     ! bottom boundary
     data(:,0)%u     = Bu
     ! right boundary
@@ -75,6 +76,7 @@ PROGRAM project3
     open(unit=16,file="output/u_spot.txt")
     open(unit=17,file="output/tau_upper.txt")
     open(unit=18,file="output/tau_lower.txt")
+    open(unit=19,file="output/u_center.txt")
     100 FORMAT (max_x2p ES16.7)
     101 FORMAT (2ES16.7)
     102 FORMAT (max_xp ES16.7)
@@ -95,5 +97,13 @@ PROGRAM project3
     END DO
     WRITE(17,102) ( mu*(data(i,max_y)%u-data(i,max_yp)%u)/dy ,i=0,max_x )
     WRITE(18,102) ( mu*(data(i,1    )%u-data(i,0     )%u)/dy ,i=0,max_x )
-    close(9);close(10);close(11);close(12);close(13);close(14);close(15);close(16);close(17);close(18)
+    DO i=0,max_xp
+        !IF (data(i,1)%xu <= 0.51 .AND. data(i,1)%xu>=0.49) THEN
+        DO j=0,max_yp
+            IF (data(i,j)%yp <= 0.51 .AND. data(i,j)%yp>=0.49) THEN
+                WRITE(19,101) data(i,j)%u,data(i,j)%xp
+            END IF
+        END DO
+    END DO
+    close(9);close(10);close(11);close(12);close(13);close(14);close(15);close(16);close(17);close(18);close(19)
 END PROGRAM project3
