@@ -149,11 +149,10 @@ CONTAINS
                         (strct(i-1,j)%P_old-strct(i  ,j)%P_old) &
                         *dy                                      &
                         )
-
                     error = error + (strct(i,j)%u - strct(i,j)%u_old)**2
                 END DO
             END DO
-            !strct(nx+1,:)%u=strct(nx,:)%u
+            strct(nx+1,:)%u=strct(nx,:)%u
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO

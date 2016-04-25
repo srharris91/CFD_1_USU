@@ -1,15 +1,15 @@
 ! user defined variables to define finite volume
 ! x and y direction # of cells
-#define max_x  51
-#define max_y  51
+#define max_x  101
+#define max_y  21
 ! x and y number of cells plus 1
-#define max_xp  52
-#define max_yp  52
+#define max_xp  102
+#define max_yp  22
 ! x and y number of cells plus 2 (to account for boundary nodes)
-#define max_x2p  53
-#define max_y2p  53
+#define max_x2p  103
+#define max_y2p  23
 ! length of x and y
-#define len_x 1.
+#define len_x 10.
 #define len_y 1.
 
 PROGRAM project3
@@ -30,9 +30,9 @@ PROGRAM project3
 
     !! initialize BC's
     ! BC's
-    Lu = 0.
+    Lu = 1.
     Ru = 0.
-    Tu = 1.
+    Tu = 0.
     Bu = 0.
     data%u          = 0.  ! initialize all data
     ! left Boundary
