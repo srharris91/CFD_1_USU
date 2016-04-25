@@ -11,6 +11,7 @@ MODULE types
     REAL    ::  Convergence2= 1.e-9
     INTEGER ::  max_iter = 1000000
     INTEGER ::  max_iter2= 700
+    INTEGER ::  max_iter3= 7000
     TYPE::dat
         REAL::xu,yv,xp,yp
         REAL::u,v,u_old,v_old !u,v is in bottom left corner, or south and west sides of cell
@@ -156,7 +157,7 @@ CONTAINS
                     error = error + (strct(i,j)%u - strct(i,j)%u_old)**2
                 END DO
             END DO
-            strct(nx+1,:)%u=strct(nx,:)%u
+            !strct(nx+1,:)%u=strct(nx,:)%u
             error=sqrt(error)
             IF (abs(error - error2)<Convergence) EXIT   ! error stops changing convergence
         END DO
@@ -310,7 +311,7 @@ CONTAINS
         open(unit=8,file="output/iter.txt")
         108 FORMAT(2ES16.7)
         WRITE(8,108) 0.1,1.
-        DO iter=1,max_iter2
+        DO iter=1,max_iter3
             ! step 1 solve discretised momentum equations
             CALL mom_uv(strct,dx,dy,nx,ny)
 

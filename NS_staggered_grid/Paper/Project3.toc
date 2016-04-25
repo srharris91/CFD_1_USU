@@ -1,0 +1,7 @@
+\contentsline {section}{\numberline {1}INTRODUCTION}{2}
+\contentsline {section}{\numberline {2}NUMERICAL METHOD}{2}
+\contentsline {section}{\numberline {3}RESULTS}{2}
+\contentsline {section}{\numberline {4}CONCLUSION}{2}
+\contentsline {section}{\numberline {A}Code}{3}
+\contentsline {subsection}{\numberline {A.1}Subroutines}{3}
+\contentsline {subsection}{\numberline {A.2}Main program}{7}
